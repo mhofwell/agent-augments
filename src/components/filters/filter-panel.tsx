@@ -1,0 +1,188 @@
+"use client";
+
+import { Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { pluginTypeConfig } from "@/components/plugin/plugin-utils";
+import type { PluginType, Marketplace } from "@/types/database";
+
+export type SortOption = "downloads" | "updated" | "name";
+
+const sortOptions: { value: SortOption; label: string }[] = [
+  { value: "downloads", label: "Most Downloads" },
+  { value: "updated", label: "Recently Updated" },
+  { value: "name", label: "Name A-Z" },
+];
+
+const categories = [
+  "All",
+  "Development",
+  "Code Review",
+  "Security",
+  "AI Agents",
+  "Debugging",
+  "Documentation",
+  "Testing",
+  "Design",
+  "DevOps",
+  "Database",
+  "Productivity",
+  "Data",
+  "Git",
+] as const;
+
+const typeOptions: { value: PluginType | "All"; label: string }[] = [
+  { value: "All", label: "All Types" },
+  ...Object.entries(pluginTypeConfig).map(([value, config]) => ({
+    value: value as PluginType,
+    label: config.label + "s",
+  })),
+];
+
+interface FilterPanelProps {
+  category: string;
+  onCategoryChange: (category: string) => void;
+  type: PluginType | "All";
+  onTypeChange: (type: PluginType | "All") => void;
+  marketplace: string;
+  onMarketplaceChange: (marketplace: string) => void;
+  sortBy: SortOption;
+  onSortChange: (sort: SortOption) => void;
+  marketplaces: Marketplace[];
+  showFilters: boolean;
+  onToggleFilters: () => void;
+}
+
+export function FilterPanel({
+  category,
+  onCategoryChange,
+  type,
+  onTypeChange,
+  marketplace,
+  onMarketplaceChange,
+  sortBy,
+  onSortChange,
+  marketplaces,
+  showFilters,
+  onToggleFilters,
+}: FilterPanelProps) {
+  const hasActiveFilters =
+    category !== "All" || type !== "All" || marketplace !== "All";
+
+  return (
+    <div className="space-y-4">
+      {/* Filter toggle button */}
+      <Button
+        variant="outline"
+        onClick={onToggleFilters}
+        className={cn(
+          "transition-colors",
+          showFilters && "bg-primary/10 border-primary/30 text-primary"
+        )}
+      >
+        <Filter size={18} className="mr-2" />
+        Filters
+        {hasActiveFilters && (
+          <span className="ml-2 px-1.5 py-0.5 text-xs bg-primary/20 text-primary rounded-full">
+            Active
+          </span>
+        )}
+      </Button>
+
+      {/* Filter dropdowns */}
+      {showFilters && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-card/50 rounded-xl border border-border animate-in slide-in-from-top-2 duration-200">
+          {/* Category */}
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-2">
+              Category
+            </label>
+            <Select value={category} onValueChange={onCategoryChange}>
+              <SelectTrigger className="bg-secondary border-border">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Type */}
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-2">
+              Type
+            </label>
+            <Select
+              value={type}
+              onValueChange={(v) => onTypeChange(v as PluginType | "All")}
+            >
+              <SelectTrigger className="bg-secondary border-border">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                {typeOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Marketplace */}
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-2">
+              Marketplace
+            </label>
+            <Select value={marketplace} onValueChange={onMarketplaceChange}>
+              <SelectTrigger className="bg-secondary border-border">
+                <SelectValue placeholder="All Marketplaces" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Marketplaces</SelectItem>
+                {marketplaces.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name || `${m.github_owner}/${m.github_repo}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Sort */}
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-2">
+              Sort By
+            </label>
+            <Select
+              value={sortBy}
+              onValueChange={(v) => onSortChange(v as SortOption)}
+            >
+              <SelectTrigger className="bg-secondary border-border">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
