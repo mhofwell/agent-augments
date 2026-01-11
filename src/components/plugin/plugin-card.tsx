@@ -35,6 +35,20 @@ export function PluginCard({
       )}
       onClick={onClick}
     >
+      {/* Badges */}
+      <div className="absolute top-3 right-3 flex gap-2">
+        {isNew && (
+          <span className="px-2 py-0.5 text-xs font-medium bg-emerald-500/20 text-emerald-400 rounded-full animate-pulse">
+            New
+          </span>
+        )}
+        {isOfficial && (
+          <span className="px-2 py-0.5 text-xs font-medium bg-primary/20 text-primary rounded-full">
+            Official
+          </span>
+        )}
+      </div>
+
       {/* Bookmark button (appears on hover) */}
       {onBookmarkToggle && (
         <button
@@ -46,7 +60,8 @@ export function PluginCard({
             "absolute top-3 right-3 p-1.5 rounded-lg transition-all",
             isBookmarked
               ? "bg-amber-500/20 text-amber-400"
-              : "opacity-0 group-hover:opacity-100 bg-secondary/80 text-muted-foreground hover:text-foreground"
+              : "opacity-0 group-hover:opacity-100 bg-secondary/80 text-muted-foreground hover:text-foreground",
+            (isNew || isOfficial) && "right-16"
           )}
         >
           {isBookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
@@ -66,24 +81,12 @@ export function PluginCard({
           <TypeIcon size={20} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-foreground font-mono truncate group-hover:text-primary transition-colors">
+          <h3 className="font-semibold text-foreground font-mono truncate pr-16 group-hover:text-primary transition-colors">
             {plugin.name}
           </h3>
-          <div className="flex items-center gap-2 mt-0.5">
-            <p className="text-xs text-muted-foreground truncate">
-              {plugin.marketplace?.name || `${plugin.marketplace?.github_owner}/${plugin.marketplace?.github_repo}`}
-            </p>
-            {isNew && (
-              <span className="shrink-0 px-2 py-0.5 text-xs font-medium bg-emerald-500/20 text-emerald-400 rounded-full">
-                New
-              </span>
-            )}
-            {isOfficial && (
-              <span className="shrink-0 px-2 py-0.5 text-xs font-medium bg-primary/20 text-primary rounded-full">
-                Official
-              </span>
-            )}
-          </div>
+          <p className="text-xs text-muted-foreground">
+            {plugin.marketplace?.name || `${plugin.marketplace?.github_owner}/${plugin.marketplace?.github_repo}`}
+          </p>
         </div>
       </div>
 
