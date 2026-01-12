@@ -20,7 +20,7 @@
 ### Phase 2: Data Layer
 - GitHub API wrapper for fetching marketplace contents
 - Marketplace sync service with plugin type detection
-- API routes: `/api/health`, `/api/sync`, `/api/plugins`, `/api/bookmarks`, `/api/analytics`
+- API routes: `/api/health`, `/api/plugins`, `/api/bookmarks`, `/api/analytics`
 
 ### Phase 3: UI Components
 - Shadcn UI (dark theme, new-york style)
@@ -42,7 +42,7 @@
 - ✅ Web service deployed
 - ✅ Domain: https://web-production-be527.up.railway.app
 - ✅ Environment variables configured
-- ✅ Hourly cron job for marketplace sync (use `bun run cron:sync` or `node scripts/cron-sync.mjs`)
+- ✅ Hourly cron job for marketplace sync (`bun scripts/cron-sync.ts`)
 
 ---
 
@@ -65,7 +65,6 @@ src/
 │   ├── layout.tsx            # Root layout
 │   └── api/
 │       ├── health/route.ts
-│       ├── sync/route.ts
 │       ├── plugins/route.ts
 │       ├── bookmarks/route.ts
 │       └── analytics/route.ts
@@ -100,7 +99,6 @@ NEXT_PUBLIC_SUPABASE_URL=https://yafmezgaogzlwujhqxev.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<publishable key: sb_publishable_...>
 SUPABASE_SECRET_KEY=<secret key: sb_secret_...>
 GITHUB_PAT=<github personal access token>
-CRON_SECRET=dev-cron-secret-change-in-production
 ```
 
 Note: Supabase now uses publishable keys (client-side) and secret keys (server-side).
@@ -123,18 +121,11 @@ bun install          # Install dependencies
 bun run dev          # Start dev server (localhost:3000)
 bun run build        # Build for production
 bun run lint         # Run ESLint
-bun run cron:sync    # Trigger marketplace sync (uses CRON_SECRET env var)
+bun run cron:sync    # Trigger marketplace sync locally
 ```
 
 ### Railway Cron Configuration
-In Railway dashboard, set the cron service command to:
-```
-node scripts/cron-sync.mjs
-```
-Or if using bun:
-```
-bun run cron:sync
-```
+The cron service runs `bun scripts/cron-sync.ts` directly (no HTTP call needed).
 Schedule: `0 * * * *` (hourly)
 
 ---

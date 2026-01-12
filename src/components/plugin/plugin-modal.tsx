@@ -4,14 +4,12 @@ import { useState } from "react";
 import {
   Download,
   Star,
-  GitFork,
   Github,
   Copy,
   Check,
   Bookmark,
   BookmarkCheck,
   ExternalLink,
-  X,
 } from "lucide-react";
 import {
   Dialog,

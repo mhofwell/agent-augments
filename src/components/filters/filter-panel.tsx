@@ -12,8 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { pluginTypeConfig } from "@/components/plugin/plugin-utils";
 import type { PluginType, Marketplace } from "@/types/database";
-
-export type SortOption = "downloads" | "updated" | "name";
+import type { SortOption } from "@/hooks";
 
 const sortOptions: { value: SortOption; label: string }[] = [
   { value: "downloads", label: "Most Downloads" },

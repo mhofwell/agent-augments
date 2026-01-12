@@ -114,33 +114,3 @@ export async function fetchMarketplaceJson(
     };
   }
 }
-
-// Fetch repo metadata (stars, forks) - optional enhancement
-export async function fetchRepoStats(
-  owner: string,
-  repo: string
-): Promise<{ stars: number; forks: number } | null> {
-  const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}`;
-
-  try {
-    const response = await fetch(url, {
-      headers: {
-        ...getHeaders(),
-        Accept: "application/vnd.github.v3+json",
-      },
-      next: { revalidate: 86400 }, // Cache for 24 hours
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
-    return {
-      stars: data.stargazers_count ?? 0,
-      forks: data.forks_count ?? 0,
-    };
-  } catch {
-    return null;
-  }
-}
