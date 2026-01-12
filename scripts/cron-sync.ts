@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /**
  * Cron script to sync all marketplaces and discover new frameworks
- * Railway cron schedule: 0 * * * * (every hour)
+ * Railway cron schedule: 0 0 * * 0 (weekly on Sunday midnight UTC)
  * Run with: bun scripts/cron-sync.ts
  */
 
