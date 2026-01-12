@@ -14,7 +14,26 @@ No active work. Ready for next feature.
 
 ---
 
+## What's Next
+
+- Plugin-to-framework linking (use `plugin_frameworks` junction table)
+- Framework filtering/search on Frameworks tab
+- Star count display on framework cards
+- Auto-update star counts from GitHub
+
+---
+
 ## Completed Milestones
+
+### Framework Discovery
+
+Added automated GitHub scanning for Claude Code frameworks.
+
+**What was built**:
+- `framework-sync.ts` - searches GitHub for frameworks with 200+ stars
+- Auto-extracts install commands from READMEs (npx, curl, git clone)
+- Added 3 new frameworks: CCPlugins, Claude Conductor, Claude Modular
+- Updated cron job to weekly schedule (`0 0 * * 0` - Sundays midnight UTC)
 
 ### Frameworks Feature
 
@@ -59,7 +78,9 @@ src/
 ├── lib/
 │   ├── supabase/             # client, server, admin
 │   ├── github/api.ts
-│   └── sync/marketplace-sync.ts
+│   └── sync/
+│       ├── marketplace-sync.ts
+│       └── framework-sync.ts
 └── types/database.ts
 ```
 
@@ -79,7 +100,7 @@ bun install        # Install deps
 bun dev            # Dev server :3000
 bun run build      # Build (verify before PR)
 bun run lint       # Lint (verify before PR)
-bun run cron:sync  # Trigger marketplace sync
+bun run cron:sync  # Sync marketplaces + discover frameworks (weekly on Railway)
 ```
 
 ---

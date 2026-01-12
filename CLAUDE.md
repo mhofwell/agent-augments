@@ -11,7 +11,7 @@ bun install        # Install deps
 bun dev            # Dev server :3000
 bun run build      # Build (verify before PR)
 bun run lint       # Lint (verify before PR)
-bun run cron:sync  # Trigger marketplace sync
+bun run cron:sync  # Sync marketplaces + discover frameworks (weekly)
 ```
 
 ## Status
@@ -19,7 +19,7 @@ Phase 5 complete (deployed). See `.wip/STATUS.md` for details and next steps.
 
 ## Supabase
 - Project ID: `yafmezgaogzlwujhqxev`
-- Tables: `marketplaces`, `plugins`, `bookmarks`, `install_events`
+- Tables: `marketplaces`, `plugins`, `bookmarks`, `install_events`, `frameworks`, `plugin_frameworks`
 - Use `createClient()` from `@/lib/supabase/client` (browser) or `@/lib/supabase/server` (RSC/routes)
 
 ## Patterns
