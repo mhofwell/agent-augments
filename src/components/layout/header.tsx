@@ -5,19 +5,19 @@ import { Terminal, Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthButton } from "@/components/auth";
 import { cn } from "@/lib/utils";
-
-type Tab = "discover" | "featured" | "new" | "bookmarks";
+import type { TabOption } from "@/hooks/usePlugins";
 
 interface HeaderProps {
-  activeTab: Tab;
-  onTabChange: (tab: Tab) => void;
+  activeTab: TabOption;
+  onTabChange: (tab: TabOption) => void;
   bookmarkCount?: number;
 }
 
-const tabs: { value: Tab; label: string }[] = [
+const tabs: { value: TabOption; label: string }[] = [
   { value: "discover", label: "Discover" },
   { value: "featured", label: "Featured" },
   { value: "new", label: "New" },
+  { value: "frameworks", label: "Frameworks" },
   { value: "bookmarks", label: "Bookmarks" },
 ];
 

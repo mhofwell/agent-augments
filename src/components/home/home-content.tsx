@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useMemo, Suspense } from "react";
-import { Package, Zap, Layers, Github } from "lucide-react";
+import { Package, Zap, Layers, Github, Terminal } from "lucide-react";
 import { AmbientBackground, Header, InstallFooter } from "@/components/layout";
 import { PluginGrid, PluginModal } from "@/components/plugin";
+import { FrameworkGrid, FrameworkModal } from "@/components/framework";
 import { SearchInput, FilterPanel, ViewToggle } from "@/components/filters";
-import { usePlugins, useMarketplaces, useBookmarks, useUrlFilters } from "@/hooks";
-import type { PluginWithMarketplace } from "@/types/database";
+import { usePlugins, useMarketplaces, useBookmarks, useUrlFilters, useFrameworks } from "@/hooks";
+import type { PluginWithMarketplace, Framework } from "@/types/database";
 
 // Wrap with Suspense for useSearchParams
 export function HomeContent() {
@@ -47,9 +48,11 @@ function HomeContentInner() {
   // Local UI state
   const [showFilters, setShowFilters] = useState(false);
   const [selectedPlugin, setSelectedPlugin] = useState<PluginWithMarketplace | null>(null);
+  const [selectedFramework, setSelectedFramework] = useState<Framework | null>(null);
 
   // Data hooks
   const { marketplaces, officialIds } = useMarketplaces();
+  const { frameworks, isLoading: frameworksLoading } = useFrameworks();
   const { bookmarks, bookmarkedIds, toggleBookmark, isLoading: bookmarksLoading } = useBookmarks();
 
   // Fetch plugins based on current filters
@@ -98,6 +101,7 @@ function HomeContentInner() {
                 {tab === "discover" && "Discover Plugins"}
                 {tab === "featured" && "Featured Plugins"}
                 {tab === "new" && "New Plugins"}
+                {tab === "frameworks" && "Development Frameworks"}
                 {tab === "bookmarks" && "Your Bookmarks"}
               </h2>
               <p className="text-muted-foreground">
@@ -105,23 +109,35 @@ function HomeContentInner() {
                   `${totalPlugins} plugins across ${totalMarketplaces} marketplaces`}
                 {tab === "featured" && "Hand-picked plugins by the community"}
                 {tab === "new" && "Recently added plugins"}
+                {tab === "frameworks" && "Structured methodologies for AI-assisted development"}
                 {tab === "bookmarks" && `${bookmarkedIds.size} saved plugins`}
               </p>
             </div>
 
             {/* Quick stats */}
-            <div className="flex gap-4">
-              <div className="flex items-center gap-2 px-3 py-2 bg-card rounded-lg border border-border">
-                <Package size={16} className="text-primary" />
-                <span className="font-semibold">{totalPlugins}</span>
-                <span className="text-xs text-muted-foreground">Plugins</span>
+            {tab !== "frameworks" && (
+              <div className="flex gap-4">
+                <div className="flex items-center gap-2 px-3 py-2 bg-card rounded-lg border border-border">
+                  <Package size={16} className="text-primary" />
+                  <span className="font-semibold">{totalPlugins}</span>
+                  <span className="text-xs text-muted-foreground">Plugins</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-2 bg-card rounded-lg border border-border">
+                  <Layers size={16} className="text-type-agent" />
+                  <span className="font-semibold">{totalMarketplaces}</span>
+                  <span className="text-xs text-muted-foreground">Marketplaces</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 px-3 py-2 bg-card rounded-lg border border-border">
-                <Layers size={16} className="text-type-agent" />
-                <span className="font-semibold">{totalMarketplaces}</span>
-                <span className="text-xs text-muted-foreground">Marketplaces</span>
+            )}
+            {tab === "frameworks" && (
+              <div className="flex gap-4">
+                <div className="flex items-center gap-2 px-3 py-2 bg-card rounded-lg border border-border">
+                  <Terminal size={16} className="text-primary" />
+                  <span className="font-semibold">{frameworks.length}</span>
+                  <span className="text-xs text-muted-foreground">Frameworks</span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Search and Filters (only show on discover tab) */}
@@ -173,34 +189,47 @@ function HomeContentInner() {
           )}
 
         {/* Main Plugin Grid */}
-        <div className="mb-6">
-          <p className="text-sm text-muted-foreground mb-4">
-            {tab === "discover" && `Showing ${displayPlugins.length} plugins`}
-            {tab === "featured" && `${displayPlugins.length} featured plugins`}
-            {tab === "new" && `${displayPlugins.length} new plugins`}
-            {tab === "bookmarks" && `${bookmarkedIds.size} bookmarked plugins`}
-          </p>
+        {tab !== "frameworks" && (
+          <div className="mb-6">
+            <p className="text-sm text-muted-foreground mb-4">
+              {tab === "discover" && `Showing ${displayPlugins.length} plugins`}
+              {tab === "featured" && `${displayPlugins.length} featured plugins`}
+              {tab === "new" && `${displayPlugins.length} new plugins`}
+              {tab === "bookmarks" && `${bookmarkedIds.size} bookmarked plugins`}
+            </p>
 
-          <PluginGrid
-            plugins={displayPlugins}
-            viewMode={view}
-            isLoading={tab === "bookmarks" ? bookmarksLoading : isLoading}
-            emptyMessage={
-              tab === "bookmarks"
-                ? "No bookmarks yet"
-                : "No plugins found"
-            }
-            emptyDescription={
-              tab === "bookmarks"
-                ? "Click on any plugin and bookmark it for quick access"
-                : "Try adjusting your filters or search query"
-            }
-            bookmarkedIds={bookmarkedIds}
-            officialMarketplaceIds={officialIds}
-            onPluginClick={setSelectedPlugin}
-            onBookmarkToggle={toggleBookmark}
-          />
-        </div>
+            <PluginGrid
+              plugins={displayPlugins}
+              viewMode={view}
+              isLoading={tab === "bookmarks" ? bookmarksLoading : isLoading}
+              emptyMessage={
+                tab === "bookmarks"
+                  ? "No bookmarks yet"
+                  : "No plugins found"
+              }
+              emptyDescription={
+                tab === "bookmarks"
+                  ? "Click on any plugin and bookmark it for quick access"
+                  : "Try adjusting your filters or search query"
+              }
+              bookmarkedIds={bookmarkedIds}
+              officialMarketplaceIds={officialIds}
+              onPluginClick={setSelectedPlugin}
+              onBookmarkToggle={toggleBookmark}
+            />
+          </div>
+        )}
+
+        {/* Frameworks Grid */}
+        {tab === "frameworks" && (
+          <div className="mb-6">
+            <FrameworkGrid
+              frameworks={frameworks}
+              isLoading={frameworksLoading}
+              onFrameworkClick={setSelectedFramework}
+            />
+          </div>
+        )}
 
         {/* Marketplaces Section */}
         {tab === "discover" && (
@@ -225,6 +254,13 @@ function HomeContentInner() {
         onBookmarkToggle={
           selectedPlugin ? () => toggleBookmark(selectedPlugin.id) : undefined
         }
+      />
+
+      {/* Framework Detail Modal */}
+      <FrameworkModal
+        framework={selectedFramework}
+        open={!!selectedFramework}
+        onOpenChange={(open) => !open && setSelectedFramework(null)}
       />
 
       <InstallFooter />

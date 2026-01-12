@@ -126,6 +126,90 @@ export type Database = {
         }
         Relationships: []
       }
+      frameworks: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          description: string | null
+          install_command: string
+          install_tool: string | null
+          prerequisites: string[] | null
+          homepage: string | null
+          github_url: string | null
+          color: string | null
+          is_active: boolean | null
+          sort_order: number | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          description?: string | null
+          install_command: string
+          install_tool?: string | null
+          prerequisites?: string[] | null
+          homepage?: string | null
+          github_url?: string | null
+          color?: string | null
+          is_active?: boolean | null
+          sort_order?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          slug?: string
+          name?: string
+          description?: string | null
+          install_command?: string
+          install_tool?: string | null
+          prerequisites?: string[] | null
+          homepage?: string | null
+          github_url?: string | null
+          color?: string | null
+          is_active?: boolean | null
+          sort_order?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      plugin_frameworks: {
+        Row: {
+          id: string
+          plugin_id: string
+          framework_id: string
+        }
+        Insert: {
+          id?: string
+          plugin_id: string
+          framework_id: string
+        }
+        Update: {
+          id?: string
+          plugin_id?: string
+          framework_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plugin_frameworks_plugin_id_fkey"
+            columns: ["plugin_id"]
+            isOneToOne: false
+            referencedRelation: "plugins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plugin_frameworks_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plugins: {
         Row: {
           author_email: string | null
@@ -328,6 +412,8 @@ export type Marketplace = Tables<"marketplaces">
 export type Plugin = Tables<"plugins">
 export type Bookmark = Tables<"bookmarks">
 export type InstallEvent = Tables<"install_events">
+export type Framework = Tables<"frameworks">
+export type PluginFramework = Tables<"plugin_frameworks">
 
 // Plugin with marketplace info (for joined queries)
 export type PluginWithMarketplace = Plugin & {

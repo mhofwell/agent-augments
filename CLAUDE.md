@@ -1,37 +1,33 @@
 # Agent Augments
 
-Web UI for browsing augments for AI coding agents from community marketplaces.
+Web UI for browsing AI coding agent augments from community marketplaces.
 
 ## Stack
-- **Framework**: Next.js 15 (App Router)
-- **Styling**: Tailwind CSS v4 + Shadcn UI (new-york, dark theme)
-- **Database**: Supabase (PostgreSQL)
-- **Deployment**: Railway
-- **Package Manager**: Bun
+Next.js 15 (App Router) · Tailwind v4 · Shadcn (new-york) · Supabase · Railway · Bun
 
-## Current Status
-Phase 4 complete (Integration). Ready for Phase 5 (Deployment).
-
-Read `wip/STATUS.md` for detailed status and next steps.
-
-## Quick Start
+## Commands
 ```bash
-bun install
-bun run dev
+bun install        # Install deps
+bun dev            # Dev server :3000
+bun run build      # Build (verify before PR)
+bun run lint       # Lint (verify before PR)
+bun run cron:sync  # Trigger marketplace sync
 ```
 
-## Key Directories
-- `src/app/` - Next.js pages and API routes
-- `src/components/` - React components (layout, plugin, filters, auth, home)
-- `src/hooks/` - Data fetching hooks (usePlugins, useMarketplaces, useBookmarks, useUrlFilters)
-- `src/lib/` - Utilities (supabase clients, github api, sync service)
-- `wip/` - Work in progress docs and status
+## Status
+Phase 5 complete (deployed). See `.wip/STATUS.md` for details and next steps.
 
 ## Supabase
 - Project ID: `yafmezgaogzlwujhqxev`
 - Tables: `marketplaces`, `plugins`, `bookmarks`, `install_events`
+- Use `createClient()` from `@/lib/supabase/client` (browser) or `@/lib/supabase/server` (RSC/routes)
 
-## Design
-- Dark mode only (oklch color system)
-- Plugin type colors: skill=cyan, agent=violet, command=emerald, bundle=amber, hook=rose
-- Glassmorphism header, ambient gradient background
+## Patterns
+- Follow component patterns in `src/components/plugin/plugin-card.tsx`
+- Hooks return `{ data, loading, error }` - see `src/hooks/usePlugins.ts`
+- API routes use `createClient` from server, return `NextResponse.json()`
+
+## Design Rules
+- Dark mode only (oklch color system in `globals.css`)
+- Plugin type colors are semantic - don't change: skill=cyan, agent=violet, command=emerald, bundle=amber, hook=rose
+- Use existing Shadcn components from `src/components/ui/` before adding new ones
