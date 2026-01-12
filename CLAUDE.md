@@ -1,6 +1,6 @@
-# Claude Code Plugin Marketplace
+# Agent Augments
 
-Web UI for browsing Claude Code plugins from multiple GitHub marketplaces.
+Web UI for browsing augments for AI coding agents from community marketplaces.
 
 ## Stack
 - **Framework**: Next.js 15 (App Router)

@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Claude Code Plugin Marketplace",
-  description: "Browse and discover plugins for Claude Code from community marketplaces",
+  title: "Agent Augments",
+  description: "Browse and discover augments for AI coding agents from community marketplaces",
   icons: {
     icon: "/favicon.ico",
   },
