@@ -140,6 +140,7 @@ export type Database = {
           color: string | null
           is_active: boolean | null
           sort_order: number | null
+          stars: number | null
           created_at: string | null
           updated_at: string | null
         }
@@ -156,6 +157,7 @@ export type Database = {
           color?: string | null
           is_active?: boolean | null
           sort_order?: number | null
+          stars?: number | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -172,10 +174,40 @@ export type Database = {
           color?: string | null
           is_active?: boolean | null
           sort_order?: number | null
+          stars?: number | null
           created_at?: string | null
           updated_at?: string | null
         }
         Relationships: []
+      }
+      framework_bookmarks: {
+        Row: {
+          id: string
+          user_id: string
+          framework_id: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          framework_id: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          framework_id?: string
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "framework_bookmarks_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       plugin_frameworks: {
         Row: {
@@ -414,6 +446,7 @@ export type Bookmark = Tables<"bookmarks">
 export type InstallEvent = Tables<"install_events">
 export type Framework = Tables<"frameworks">
 export type PluginFramework = Tables<"plugin_frameworks">
+export type FrameworkBookmark = Tables<"framework_bookmarks">
 
 // Plugin with marketplace info (for joined queries)
 export type PluginWithMarketplace = Plugin & {

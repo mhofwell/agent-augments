@@ -6,7 +6,7 @@ import { AmbientBackground, Header, InstallFooter } from "@/components/layout";
 import { PluginGrid, PluginModal } from "@/components/plugin";
 import { FrameworkGrid, FrameworkModal } from "@/components/framework";
 import { SearchInput, FilterPanel, ViewToggle } from "@/components/filters";
-import { usePlugins, useMarketplaces, useBookmarks, useUrlFilters, useFrameworks } from "@/hooks";
+import { usePlugins, useMarketplaces, useBookmarks, useFrameworkBookmarks, useUrlFilters, useFrameworks } from "@/hooks";
 import type { PluginWithMarketplace, Framework } from "@/types/database";
 
 // Wrap with Suspense for useSearchParams
@@ -54,6 +54,7 @@ function HomeContentInner() {
   const { marketplaces, officialIds } = useMarketplaces();
   const { frameworks, isLoading: frameworksLoading } = useFrameworks();
   const { bookmarks, bookmarkedIds, toggleBookmark, isLoading: bookmarksLoading } = useBookmarks();
+  const { bookmarkedIds: frameworkBookmarkedIds, toggleBookmark: toggleFrameworkBookmark } = useFrameworkBookmarks();
 
   // Fetch plugins based on current filters
   const { plugins, isLoading, pagination } = usePlugins({
@@ -227,6 +228,8 @@ function HomeContentInner() {
               frameworks={frameworks}
               isLoading={frameworksLoading}
               onFrameworkClick={setSelectedFramework}
+              bookmarkedIds={frameworkBookmarkedIds}
+              onToggleBookmark={toggleFrameworkBookmark}
             />
           </div>
         )}
@@ -261,6 +264,10 @@ function HomeContentInner() {
         framework={selectedFramework}
         open={!!selectedFramework}
         onOpenChange={(open) => !open && setSelectedFramework(null)}
+        isBookmarked={selectedFramework ? frameworkBookmarkedIds.has(selectedFramework.id) : false}
+        onToggleBookmark={
+          selectedFramework ? () => toggleFrameworkBookmark(selectedFramework.id) : undefined
+        }
       />
 
       <InstallFooter />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check, Github, ExternalLink, Terminal } from "lucide-react";
+import { Copy, Check, Github, ExternalLink, Terminal, Star, Bookmark } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,19 +12,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { getToolStyle } from "./framework-utils";
+import { getToolStyle, formatStars } from "./framework-utils";
 import type { Framework } from "@/types/database";
 
 interface FrameworkModalProps {
   framework: Framework | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isBookmarked?: boolean;
+  onToggleBookmark?: () => void;
 }
 
 export function FrameworkModal({
   framework,
   open,
   onOpenChange,
+  isBookmarked,
+  onToggleBookmark,
 }: FrameworkModalProps) {
   const [copied, setCopied] = useState(false);
 
@@ -67,10 +71,35 @@ export function FrameworkModal({
                     {framework.install_tool}
                   </Badge>
                 )}
+                {framework.stars && framework.stars > 0 && (
+                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Star size={14} className="text-amber-400 fill-amber-400" />
+                    {formatStars(framework.stars)}
+                  </span>
+                )}
               </div>
-              <p className="text-muted-foreground text-sm mt-1">
-                Development Framework
-              </p>
+              <div className="flex items-center gap-3 mt-1">
+                <p className="text-muted-foreground text-sm">
+                  Development Framework
+                </p>
+                {onToggleBookmark && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onToggleBookmark}
+                    className="h-7 px-2"
+                  >
+                    <Bookmark
+                      size={14}
+                      className={cn(
+                        "mr-1",
+                        isBookmarked ? "fill-primary text-primary" : "text-muted-foreground"
+                      )}
+                    />
+                    {isBookmarked ? "Saved" : "Save"}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </DialogHeader>

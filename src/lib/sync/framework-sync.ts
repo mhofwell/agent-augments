@@ -24,6 +24,7 @@ export interface FrameworkSyncResult {
   success: boolean;
   discovered: number;
   added: number;
+  updated: number;
   skipped: number;
   errors: string[];
 }
@@ -168,6 +169,7 @@ export async function syncFrameworks(): Promise<FrameworkSyncResult> {
     success: false,
     discovered: 0,
     added: 0,
+    updated: 0,
     skipped: 0,
     errors: [],
   };
@@ -178,14 +180,16 @@ export async function syncFrameworks(): Promise<FrameworkSyncResult> {
   // Get existing frameworks
   const { data: existing, error: fetchError } = await supabase
     .from("frameworks")
-    .select("github_url, slug");
+    .select("id, github_url, slug, stars");
 
   if (fetchError) {
     result.errors.push(`Failed to fetch existing frameworks: ${fetchError.message}`);
     return result;
   }
 
-  const existingUrls = new Set(existing?.map((f) => f.github_url?.toLowerCase()) || []);
+  const existingByUrl = new Map(
+    existing?.map((f) => [f.github_url?.toLowerCase(), f]) || []
+  );
   const existingSlugs = new Set(existing?.map((f) => f.slug) || []);
 
   // Search GitHub
@@ -206,11 +210,25 @@ export async function syncFrameworks(): Promise<FrameworkSyncResult> {
 
   for (const repo of repos) {
     const repoUrl = repo.html_url.toLowerCase();
+    const existingFramework = existingByUrl.get(repoUrl);
 
-    // Skip if already exists
-    if (existingUrls.has(repoUrl)) {
-      console.log(`[FrameworkSync] Skipping ${repo.full_name} (already exists)`);
-      result.skipped++;
+    // If exists, update star count if changed
+    if (existingFramework) {
+      if (existingFramework.stars !== repo.stargazers_count) {
+        const { error: updateError } = await supabase
+          .from("frameworks")
+          .update({ stars: repo.stargazers_count, updated_at: new Date().toISOString() })
+          .eq("id", existingFramework.id);
+
+        if (updateError) {
+          result.errors.push(`Failed to update stars for ${repo.full_name}: ${updateError.message}`);
+        } else {
+          result.updated++;
+          console.log(`[FrameworkSync] Updated ${repo.full_name}: ${existingFramework.stars} → ${repo.stargazers_count}★`);
+        }
+      } else {
+        result.skipped++;
+      }
       continue;
     }
 
@@ -235,7 +253,7 @@ export async function syncFrameworks(): Promise<FrameworkSyncResult> {
       }
     }
 
-    // Insert new framework
+    // Insert new framework with star count
     const { error: insertError } = await supabase.from("frameworks").insert({
       slug,
       name: repo.name,
@@ -245,6 +263,7 @@ export async function syncFrameworks(): Promise<FrameworkSyncResult> {
       github_url: repo.html_url,
       homepage: repo.homepage || repo.html_url,
       color: getFrameworkColor(sortOrder),
+      stars: repo.stargazers_count,
       is_active: true,
       sort_order: sortOrder,
     });
@@ -255,7 +274,7 @@ export async function syncFrameworks(): Promise<FrameworkSyncResult> {
     } else {
       result.added++;
       existingSlugs.add(slug);
-      existingUrls.add(repoUrl);
+      existingByUrl.set(repoUrl, { id: "", github_url: repoUrl, slug, stars: repo.stargazers_count });
       sortOrder++;
       console.log(`[FrameworkSync] Added ${repo.full_name} (${repo.stargazers_count}★)`);
     }
@@ -265,7 +284,7 @@ export async function syncFrameworks(): Promise<FrameworkSyncResult> {
   }
 
   result.success = result.errors.length === 0;
-  console.log(`[FrameworkSync] Complete. Added: ${result.added}, Skipped: ${result.skipped}`);
+  console.log(`[FrameworkSync] Complete. Added: ${result.added}, Updated: ${result.updated}, Skipped: ${result.skipped}`);
 
   return result;
 }

@@ -61,6 +61,7 @@ async function main() {
     console.log(JSON.stringify({
       discovered: frameworkSummary.discovered,
       added: frameworkSummary.added,
+      updated: frameworkSummary.updated,
       skipped: frameworkSummary.skipped,
       errors: frameworkSummary.errors.length,
     }, null, 2));
