@@ -42,7 +42,7 @@
 - ✅ Web service deployed
 - ✅ Domain: https://web-production-be527.up.railway.app
 - ✅ Environment variables configured
-- ✅ Hourly cron job for marketplace sync
+- ✅ Hourly cron job for marketplace sync (use `bun run cron:sync` or `node scripts/cron-sync.mjs`)
 
 ---
 
@@ -123,11 +123,19 @@ bun install          # Install dependencies
 bun run dev          # Start dev server (localhost:3000)
 bun run build        # Build for production
 bun run lint         # Run ESLint
-
-# Trigger sync (after adding env vars)
-curl -X POST http://localhost:3000/api/sync \
-  -H "Authorization: Bearer dev-cron-secret-change-in-production"
+bun run cron:sync    # Trigger marketplace sync (uses CRON_SECRET env var)
 ```
+
+### Railway Cron Configuration
+In Railway dashboard, set the cron service command to:
+```
+node scripts/cron-sync.mjs
+```
+Or if using bun:
+```
+bun run cron:sync
+```
+Schedule: `0 * * * *` (hourly)
 
 ---
 
