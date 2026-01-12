@@ -18,12 +18,25 @@ No active work. Ready for next feature.
 
 - Plugin-to-framework linking (use `plugin_frameworks` junction table)
 - Framework filtering/search on Frameworks tab
-- Star count display on framework cards
-- Auto-update star counts from GitHub
+- User profiles / public bookmark lists
+- Plugin install analytics dashboard
 
 ---
 
 ## Completed Milestones
+
+### Framework Bookmarks & Stars
+
+Added ability to favorite frameworks and display GitHub star counts.
+
+**What was built**:
+- `framework_bookmarks` table with RLS policies
+- `/api/framework-bookmarks` API route (GET/POST/DELETE)
+- `useFrameworkBookmarks` hook
+- Star counts on framework cards and modal (e.g., "29.3k")
+- Bookmark button on cards (shows on hover) and modal ("Save" button)
+- Framework sync now stores and updates star counts weekly
+- Tool color badges: npx=emerald, npm=red, bun=orange, bash=cyan, curl=amber
 
 ### Framework Discovery
 
@@ -32,20 +45,19 @@ Added automated GitHub scanning for Claude Code frameworks.
 **What was built**:
 - `framework-sync.ts` - searches GitHub for frameworks with 200+ stars
 - Auto-extracts install commands from READMEs (npx, curl, git clone)
-- Added 3 new frameworks: CCPlugins, Claude Conductor, Claude Modular
+- Added 3 new frameworks: CCPlugins (2.6k★), Claude Conductor (273★), Claude Modular (268★)
 - Updated cron job to weekly schedule (`0 0 * * 0` - Sundays midnight UTC)
 
 ### Frameworks Feature
 
-Added development frameworks (BMAD, GSD, Specify, MoAI) as a new "Frameworks" tab.
+Added development frameworks as a new "Frameworks" tab.
 
 **What was built**:
 - `frameworks` and `plugin_frameworks` tables in Supabase with RLS
-- Seeded 4 frameworks: BMAD, GSD, Specify, MoAI
-- TypeScript types for Framework and PluginFramework
+- Seeded frameworks: BMAD (29.3k★), GSD, Specify, MoAI
+- TypeScript types for Framework, PluginFramework, FrameworkBookmark
 - `useFrameworks` hook for data fetching
 - Framework components: FrameworkCard, FrameworkGrid, FrameworkModal
-- Integrated "Frameworks" tab in navigation between "New" and "Bookmarks"
 - Copy-to-clipboard functionality for install commands
 
 ### MVP Launch (Phases 1-5)
@@ -54,7 +66,7 @@ Added development frameworks (BMAD, GSD, Specify, MoAI) as a new "Frameworks" ta
 - **Phase 2: Data Layer** - GitHub API sync, API routes
 - **Phase 3: UI Components** - Shadcn UI, plugin cards/grid/modal
 - **Phase 4: Integration** - Hooks, URL-based filtering, tabs
-- **Phase 5: Deployment** - Railway, hourly cron sync
+- **Phase 5: Deployment** - Railway, weekly cron sync
 
 ---
 
@@ -65,16 +77,16 @@ src/
 ├── app/
 │   ├── page.tsx              # Main page
 │   ├── globals.css           # Dark theme (oklch)
-│   └── api/                  # health, plugins, bookmarks, analytics
+│   └── api/                  # health, plugins, bookmarks, framework-bookmarks, analytics
 ├── components/
 │   ├── ui/                   # Shadcn primitives
 │   ├── layout/               # Header, AmbientBackground, InstallFooter
 │   ├── plugin/               # PluginCard, PluginGrid, PluginModal
-│   ├── framework/            # FrameworkCard, FrameworkGrid, FrameworkModal
+│   ├── framework/            # FrameworkCard, FrameworkGrid, FrameworkModal, framework-utils
 │   ├── filters/              # SearchInput, FilterPanel, ViewToggle
 │   ├── auth/                 # AuthButton
 │   └── home/                 # HomeContent
-├── hooks/                    # usePlugins, useMarketplaces, useBookmarks, useUrlFilters, useFrameworks
+├── hooks/                    # usePlugins, useMarketplaces, useBookmarks, useFrameworkBookmarks, useUrlFilters, useFrameworks
 ├── lib/
 │   ├── supabase/             # client, server, admin
 │   ├── github/api.ts
@@ -89,7 +101,7 @@ src/
 ## Supabase
 
 - **Project ID**: `yafmezgaogzlwujhqxev`
-- **Tables**: `marketplaces`, `plugins`, `bookmarks`, `install_events`, `frameworks`, `plugin_frameworks`
+- **Tables**: `marketplaces`, `plugins`, `bookmarks`, `install_events`, `frameworks`, `plugin_frameworks`, `framework_bookmarks`
 
 ---
 
@@ -120,4 +132,5 @@ GITHUB_PAT=<github personal access token>
 
 - Dark mode only (oklch color system)
 - Plugin type colors: skill=cyan, agent=violet, command=emerald, bundle=amber, hook=rose
-- Framework colors: Per-framework brand colors (blue, emerald, violet, amber)
+- Framework tool colors: npx=emerald, npm=red, bun=orange, bash=cyan, curl=amber, uv=violet
+- Framework brand colors: Per-framework custom colors
