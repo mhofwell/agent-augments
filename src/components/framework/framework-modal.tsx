@@ -73,7 +73,7 @@ export function FrameworkModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl bg-card border-border p-0 gap-0">
+      <DialogContent className="sm:max-w-2xl bg-card border-border p-0 gap-0 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <DialogHeader className="p-6 pb-4">
           <div className="flex items-start gap-4">
@@ -256,11 +256,11 @@ export function FrameworkModal({
 
           {/* Compatible Plugins */}
           {plugins.length > 0 && (
-            <div>
+            <div className="overflow-hidden">
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
                 Compatible Plugins ({plugins.length})
               </h3>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+              <div className="space-y-2 max-h-48 overflow-y-auto overflow-x-hidden">
                 {plugins.map((plugin) => {
                   const typeConfig = getPluginTypeConfig(plugin.plugin_type as PluginType);
                   const TypeIcon = typeConfig.icon;
@@ -268,11 +268,11 @@ export function FrameworkModal({
                     <button
                       key={plugin.id}
                       onClick={() => onPluginClick?.(plugin)}
-                      className="w-full flex items-center gap-3 p-3 rounded-lg border border-border bg-secondary/30 hover:bg-secondary transition-colors text-left"
+                      className="w-full flex items-center gap-3 p-3 rounded-lg border border-border bg-secondary/30 hover:bg-secondary transition-colors text-left overflow-hidden"
                     >
                       <div
                         className={cn(
-                          "w-8 h-8 rounded-md flex items-center justify-center border",
+                          "w-8 h-8 rounded-md flex items-center justify-center border flex-shrink-0",
                           typeConfig.colorClass,
                           typeConfig.bgClass,
                           typeConfig.borderClass
@@ -280,7 +280,7 @@ export function FrameworkModal({
                       >
                         <TypeIcon size={16} />
                       </div>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 overflow-hidden">
                         <div className="font-medium font-mono text-sm truncate">
                           {plugin.name}
                         </div>
@@ -288,7 +288,7 @@ export function FrameworkModal({
                           {plugin.description || "No description"}
                         </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-xs text-muted-foreground flex-shrink-0">
                         {formatNumber(plugin.install_count)}
                       </div>
                     </button>
