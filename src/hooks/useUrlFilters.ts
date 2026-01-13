@@ -3,13 +3,15 @@
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import type { PluginType } from "@/types/database";
-import type { SortOption, TabOption } from "./usePlugins";
+import type { SortOption, TabOption, AgentId } from "./usePlugins";
 
 interface UrlFilters {
   search: string;
   type: PluginType | "All";
   category: string;
   marketplace: string;
+  framework: string;
+  agent: AgentId;
   sort: SortOption;
   tab: TabOption;
   view: "grid" | "list";
@@ -20,8 +22,10 @@ const DEFAULTS: UrlFilters = {
   type: "All",
   category: "All",
   marketplace: "All",
-  sort: "downloads",
-  tab: "discover",
+  framework: "All",
+  agent: "claude-code",
+  sort: "popular",
+  tab: "plugins",
   view: "grid",
 };
 
@@ -37,6 +41,8 @@ export function useUrlFilters() {
       type: (searchParams.get("type") as PluginType | "All") || DEFAULTS.type,
       category: searchParams.get("category") || DEFAULTS.category,
       marketplace: searchParams.get("marketplace") || DEFAULTS.marketplace,
+      framework: searchParams.get("framework") || DEFAULTS.framework,
+      agent: (searchParams.get("agent") as AgentId) || DEFAULTS.agent,
       sort: (searchParams.get("sort") as SortOption) || DEFAULTS.sort,
       tab: (searchParams.get("tab") as TabOption) || DEFAULTS.tab,
       view: (searchParams.get("view") as "grid" | "list") || DEFAULTS.view,
@@ -89,6 +95,16 @@ export function useUrlFilters() {
     [setFilters]
   );
 
+  const setFramework = useCallback(
+    (framework: string) => setFilters({ framework }),
+    [setFilters]
+  );
+
+  const setAgent = useCallback(
+    (agent: AgentId) => setFilters({ agent }),
+    [setFilters]
+  );
+
   const setSort = useCallback(
     (sort: SortOption) => setFilters({ sort }),
     [setFilters]
@@ -115,6 +131,8 @@ export function useUrlFilters() {
     setType,
     setCategory,
     setMarketplace,
+    setFramework,
+    setAgent,
     setSort,
     setTab,
     setView,

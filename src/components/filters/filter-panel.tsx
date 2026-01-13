@@ -1,6 +1,6 @@
 "use client";
 
-import { Filter } from "lucide-react";
+import { Filter, Terminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -11,11 +11,12 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { pluginTypeConfig } from "@/components/plugin/plugin-utils";
-import type { PluginType, Marketplace } from "@/types/database";
+import type { PluginType, Marketplace, Framework } from "@/types/database";
 import type { SortOption } from "@/hooks";
 
 const sortOptions: { value: SortOption; label: string }[] = [
-  { value: "downloads", label: "Most Downloads" },
+  { value: "popular", label: "Popular" },
+  { value: "new", label: "New (7 days)" },
   { value: "updated", label: "Recently Updated" },
   { value: "name", label: "Name A-Z" },
 ];
@@ -52,9 +53,12 @@ interface FilterPanelProps {
   onTypeChange: (type: PluginType | "All") => void;
   marketplace: string;
   onMarketplaceChange: (marketplace: string) => void;
+  framework: string;
+  onFrameworkChange: (framework: string) => void;
   sortBy: SortOption;
   onSortChange: (sort: SortOption) => void;
   marketplaces: Marketplace[];
+  frameworks: Framework[];
   showFilters: boolean;
   onToggleFilters: () => void;
 }
@@ -66,14 +70,17 @@ export function FilterPanel({
   onTypeChange,
   marketplace,
   onMarketplaceChange,
+  framework,
+  onFrameworkChange,
   sortBy,
   onSortChange,
   marketplaces,
+  frameworks,
   showFilters,
   onToggleFilters,
 }: FilterPanelProps) {
   const hasActiveFilters =
-    category !== "All" || type !== "All" || marketplace !== "All";
+    category !== "All" || type !== "All" || marketplace !== "All" || framework !== "All";
 
   return (
     <div className="space-y-4">
@@ -97,7 +104,7 @@ export function FilterPanel({
 
       {/* Filter dropdowns */}
       {showFilters && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-card/50 rounded-xl border border-border animate-in slide-in-from-top-2 duration-200">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 p-4 bg-card/50 rounded-xl border border-border animate-in slide-in-from-top-2 duration-200">
           {/* Category */}
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-2">
@@ -133,6 +140,29 @@ export function FilterPanel({
                 {typeOptions.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Framework */}
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-2">
+              Framework
+            </label>
+            <Select value={framework} onValueChange={onFrameworkChange}>
+              <SelectTrigger className="bg-secondary border-border">
+                <SelectValue placeholder="All Frameworks" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Frameworks</SelectItem>
+                {frameworks.map((fw) => (
+                  <SelectItem key={fw.id} value={fw.id}>
+                    <span className="flex items-center gap-2">
+                      <Terminal size={12} style={{ color: fw.color || undefined }} />
+                      {fw.name}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>

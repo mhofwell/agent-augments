@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Download,
   Star,
@@ -10,7 +10,11 @@ import {
   Bookmark,
   BookmarkCheck,
   ExternalLink,
+  Terminal,
+  ChevronDown,
+  HelpCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -20,15 +24,45 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import {
   getPluginTypeConfig,
   formatNumber,
   formatDate,
-  getInstallCommand,
   getMarketplaceCommand,
 } from "./plugin-utils";
-import type { PluginWithMarketplace, PluginType } from "@/types/database";
+import { usePluginFrameworks } from "@/hooks/usePluginFrameworks";
+import { formatStars } from "@/components/framework/framework-utils";
+import type { PluginWithMarketplace, PluginType, Framework } from "@/types/database";
+
+type InstallScope = "user" | "project" | "local";
+
+const scopeOptions: { value: InstallScope; label: string; description: string }[] = [
+  {
+    value: "user",
+    label: "User (recommended)",
+    description: "Available in all your projects",
+  },
+  {
+    value: "project",
+    label: "Project",
+    description: "Shared with your team via .claude/settings.json",
+  },
+  {
+    value: "local",
+    label: "Local",
+    description: "This project only, not version controlled",
+  },
+];
+
+function getInstallCommandWithScope(pluginName: string, marketplaceRepo: string, scope: InstallScope): string {
+  return `/plugin install ${pluginName}@${marketplaceRepo} --scope ${scope}`;
+}
 
 interface PluginModalProps {
   plugin: PluginWithMarketplace | null;
@@ -38,6 +72,7 @@ interface PluginModalProps {
   isOfficial?: boolean;
   onBookmarkToggle?: () => void;
   onInstallClick?: (command: string) => void;
+  onFrameworkClick?: (framework: Framework) => void;
 }
 
 export function PluginModal({
@@ -48,8 +83,20 @@ export function PluginModal({
   isOfficial = false,
   onBookmarkToggle,
   onInstallClick,
+  onFrameworkClick,
 }: PluginModalProps) {
+  const [selectedScope, setSelectedScope] = useState<InstallScope>("user");
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [frameworks, setFrameworks] = useState<Framework[]>([]);
+  const { getFrameworksForPlugin } = usePluginFrameworks();
+
+  // Fetch frameworks when modal opens with a plugin
+  useEffect(() => {
+    if (open && plugin?.id) {
+      getFrameworksForPlugin(plugin.id).then(setFrameworks);
+    }
+  }, [open, plugin?.id, getFrameworksForPlugin]);
 
   if (!plugin) return null;
 
@@ -59,12 +106,15 @@ export function PluginModal({
   const marketplaceOwner = plugin.marketplace?.github_owner ?? "";
   const marketplaceRepo = plugin.marketplace?.github_repo ?? "";
   const marketplaceCommand = getMarketplaceCommand(marketplaceOwner, marketplaceRepo);
-  const installCommand = getInstallCommand(plugin.name, marketplaceRepo);
+  const installCommand = getInstallCommandWithScope(plugin.name, marketplaceRepo, selectedScope);
 
   const copyToClipboard = async (text: string, id: string) => {
     await navigator.clipboard.writeText(text);
     setCopiedCommand(id);
     onInstallClick?.(text);
+    toast.success("Copied to clipboard", {
+      description: "Paste in Claude Code to install",
+    });
     setTimeout(() => setCopiedCommand(null), 2000);
   };
 
@@ -72,7 +122,7 @@ export function PluginModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl bg-card border-border p-0 gap-0">
+      <DialogContent className="sm:max-w-2xl bg-card border-border p-0 gap-0 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <DialogHeader className="p-6 pb-4">
           <div className="flex items-start justify-between">
@@ -88,7 +138,7 @@ export function PluginModal({
                 <TypeIcon size={28} />
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <DialogTitle className="text-2xl font-bold font-mono">
                     {plugin.name}
                   </DialogTitle>
@@ -97,6 +147,10 @@ export function PluginModal({
                       Official
                     </Badge>
                   )}
+                  <Badge variant="secondary" className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                    <Terminal size={12} className="mr-1" />
+                    Claude Code
+                  </Badge>
                 </div>
                 <p className="text-muted-foreground text-sm mt-1">
                   by {plugin.author_name || plugin.marketplace?.name || `${marketplaceOwner}/${marketplaceRepo}`}
@@ -179,17 +233,47 @@ export function PluginModal({
             </div>
           )}
 
-          {/* Install Commands */}
-          <div className="space-y-3">
+          {/* Works with Frameworks */}
+          {frameworks.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                Works with
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {frameworks.map((fw) => (
+                  <button
+                    key={fw.id}
+                    onClick={() => onFrameworkClick?.(fw)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-secondary/50 hover:bg-secondary transition-colors"
+                    style={{ borderColor: `${fw.color}40` }}
+                  >
+                    <Terminal size={14} style={{ color: fw.color || undefined }} />
+                    <span className="text-sm font-medium">{fw.name}</span>
+                    {fw.stars && fw.stars > 0 && (
+                      <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                        <Star size={10} className="text-amber-400 fill-amber-400" />
+                        {formatStars(fw.stars)}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Installation */}
+          <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
               Installation
             </h3>
+
+            {/* Marketplace command (first time only) */}
             <div className="space-y-2">
-              {/* Marketplace command */}
+              <p className="text-xs text-muted-foreground">
+                Add marketplace (first time only):
+              </p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 px-4 py-3 bg-background rounded-lg font-mono text-sm text-emerald-400 border border-border overflow-x-auto">
-                  <span className="text-muted-foreground"># Add marketplace first</span>
-                  <br />
                   {marketplaceCommand}
                 </code>
                 <Button
@@ -205,28 +289,91 @@ export function PluginModal({
                   )}
                 </Button>
               </div>
+            </div>
 
-              {/* Install command */}
-              <div className="flex items-center gap-2">
-                <code className="flex-1 px-4 py-3 bg-background rounded-lg font-mono text-sm text-primary border border-border overflow-x-auto">
-                  <span className="text-muted-foreground"># Install plugin</span>
-                  <br />
-                  {installCommand}
-                </code>
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  onClick={() => copyToClipboard(installCommand, "install")}
-                  className="flex-shrink-0"
-                >
-                  {copiedCommand === "install" ? (
-                    <Check size={16} className="text-emerald-400" />
-                  ) : (
-                    <Copy size={16} />
-                  )}
-                </Button>
+            {/* Scope selection */}
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Choose installation scope:
+              </p>
+              <div className="space-y-2">
+                {scopeOptions.map((option) => (
+                  <label
+                    key={option.value}
+                    className={cn(
+                      "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                      selectedScope === option.value
+                        ? "bg-primary/5 border-primary/50"
+                        : "bg-background border-border hover:border-border/80"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="scope"
+                      value={option.value}
+                      checked={selectedScope === option.value}
+                      onChange={() => setSelectedScope(option.value)}
+                      className="mt-0.5 accent-primary"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">{option.label}</div>
+                      <div className="text-xs text-muted-foreground">{option.description}</div>
+                    </div>
+                  </label>
+                ))}
               </div>
             </div>
+
+            {/* Install command */}
+            <div className="flex items-center gap-2">
+              <code className="flex-1 px-4 py-3 bg-background rounded-lg font-mono text-sm text-primary border border-border overflow-x-auto">
+                {installCommand}
+              </code>
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={() => copyToClipboard(installCommand, "install")}
+                className="flex-shrink-0"
+              >
+                {copiedCommand === "install" ? (
+                  <Check size={16} className="text-emerald-400" />
+                ) : (
+                  <Copy size={16} />
+                )}
+              </Button>
+            </div>
+
+            {/* First time? Help section */}
+            <Collapsible open={helpOpen} onOpenChange={setHelpOpen}>
+              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <HelpCircle size={14} />
+                <span>First time installing plugins?</span>
+                <ChevronDown
+                  size={14}
+                  className={cn("transition-transform", helpOpen && "rotate-180")}
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-3">
+                <div className="bg-background rounded-lg border border-border p-4 space-y-3 text-sm text-muted-foreground">
+                  <ol className="list-decimal list-inside space-y-2">
+                    <li>Open Claude Code in your terminal</li>
+                    <li>Run the marketplace command above (only needed once per marketplace)</li>
+                    <li>Run the install command to add the plugin</li>
+                    <li>The plugin will be available in your next Claude Code session</li>
+                  </ol>
+                  <Separator />
+                  <a
+                    href="https://docs.anthropic.com/en/docs/claude-code/plugins"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-primary hover:underline"
+                  >
+                    Learn more in the Claude Code docs
+                    <ExternalLink size={12} />
+                  </a>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           {/* Actions */}

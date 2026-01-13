@@ -244,6 +244,7 @@ export type Database = {
       }
       plugins: {
         Row: {
+          agent: string
           author_email: string | null
           author_name: string | null
           author_url: string | null
@@ -267,6 +268,7 @@ export type Database = {
           version: string | null
         }
         Insert: {
+          agent?: string
           author_email?: string | null
           author_name?: string | null
           author_url?: string | null
@@ -290,6 +292,7 @@ export type Database = {
           version?: string | null
         }
         Update: {
+          agent?: string
           author_email?: string | null
           author_name?: string | null
           author_url?: string | null

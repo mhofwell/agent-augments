@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getToolStyle, formatStars } from "./framework-utils";
+import { getCompatibleAgents } from "@/lib/agents";
 import type { Framework } from "@/types/database";
 
 interface FrameworkCardProps {
@@ -18,6 +19,7 @@ interface FrameworkCardProps {
 export function FrameworkCard({ framework, onClick, isBookmarked, onToggleBookmark }: FrameworkCardProps) {
   const [copied, setCopied] = useState(false);
   const toolStyle = getToolStyle(framework.install_tool);
+  const compatibleAgents = getCompatibleAgents(framework.id);
 
   const copyCommand = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -100,9 +102,28 @@ export function FrameworkCard({ framework, onClick, isBookmarked, onToggleBookma
       </div>
 
       {/* Description */}
-      <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 mb-4">
+      <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 mb-3">
         {framework.description || "No description available"}
       </p>
+
+      {/* Works with agents */}
+      <div className="flex items-center gap-1.5 mb-3 text-xs text-muted-foreground">
+        <span>Works with:</span>
+        <div className="flex items-center gap-1">
+          {compatibleAgents.map((agent, idx) => (
+            <span key={agent.id} className="flex items-center">
+              <span
+                className="inline-block w-2 h-2 rounded-full mr-1"
+                style={{ backgroundColor: agent.color }}
+              />
+              <span>{agent.shortName}</span>
+              {idx < compatibleAgents.length - 1 && (
+                <span className="mx-1 text-border">·</span>
+              )}
+            </span>
+          ))}
+        </div>
+      </div>
 
       {/* Prerequisites */}
       {framework.prerequisites && framework.prerequisites.length > 0 && (

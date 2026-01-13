@@ -10,14 +10,39 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") || "";
   const category = searchParams.get("category") || "";
   const marketplace = searchParams.get("marketplace") || "";
-  const sort = searchParams.get("sort") || "newest";
-  const tab = searchParams.get("tab") || "discover";
+  const framework = searchParams.get("framework") || "";
+  const agent = searchParams.get("agent") || "claude-code"; // Default to claude-code
+  const sort = searchParams.get("sort") || "installs";
   const page = parseInt(searchParams.get("page") || "1", 10);
   const limit = Math.min(parseInt(searchParams.get("limit") || "24", 10), 100);
 
   const offset = (page - 1) * limit;
 
   const supabase = await createClient();
+
+  // If framework filter is set, get the plugin IDs linked to that framework
+  let frameworkPluginIds: string[] | null = null;
+  if (framework && framework !== "all") {
+    const { data: links } = await supabase
+      .from("plugin_frameworks")
+      .select("plugin_id")
+      .eq("framework_id", framework);
+
+    if (links && links.length > 0) {
+      frameworkPluginIds = links.map((l) => l.plugin_id);
+    } else {
+      // No plugins linked to this framework
+      return NextResponse.json({
+        plugins: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
+        },
+      });
+    }
+  }
 
   // Build query
   let query = supabase.from("plugins").select(
@@ -51,28 +76,34 @@ export async function GET(request: NextRequest) {
     query = query.eq("marketplace_id", marketplace);
   }
 
-  // Apply tab-specific filters
-  if (tab === "featured") {
-    // Featured = high install count (top 20% or manual flag if we add one)
-    query = query.order("install_count", { ascending: false }).limit(limit);
-  } else if (tab === "new") {
-    // New = created in last 7 days
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    query = query.gte("created_at", sevenDaysAgo.toISOString());
+  // Filter by agent (defaults to claude-code, use "all" to show all agents)
+  if (agent && agent !== "all") {
+    query = query.eq("agent", agent);
   }
 
-  // Apply sorting
+  // Filter by framework-linked plugins
+  if (frameworkPluginIds) {
+    query = query.in("id", frameworkPluginIds);
+  }
+
+  // Apply sorting (and time-based filtering for "new")
   switch (sort) {
+    case "new":
+      // New = created in last 7 days, sorted by newest first
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      query = query.gte("created_at", sevenDaysAgo.toISOString());
+      query = query.order("created_at", { ascending: false });
+      break;
     case "name":
       query = query.order("name", { ascending: true });
       break;
-    case "installs":
-      query = query.order("install_count", { ascending: false });
-      break;
     case "newest":
-    default:
       query = query.order("created_at", { ascending: false });
+      break;
+    case "installs":
+    default:
+      query = query.order("install_count", { ascending: false });
       break;
   }
 

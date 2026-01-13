@@ -3,16 +3,18 @@
 import { useState, useEffect, useCallback } from "react";
 import type { PluginWithMarketplace, PluginType } from "@/types/database";
 
-export type SortOption = "downloads" | "updated" | "name";
-export type TabOption = "discover" | "featured" | "new" | "frameworks" | "bookmarks";
+export type SortOption = "popular" | "new" | "updated" | "name";
+export type TabOption = "plugins" | "frameworks" | "bookmarks";
+export type AgentId = "claude-code" | "cursor" | "windsurf" | "codex" | "all";
 
 interface UsePluginsParams {
   search?: string;
   type?: PluginType | "All";
   category?: string;
   marketplace?: string;
+  framework?: string;
+  agent?: AgentId;
   sort?: SortOption;
-  tab?: TabOption;
   page?: number;
   limit?: number;
 }
@@ -36,8 +38,9 @@ export function usePlugins(params: UsePluginsParams = {}): UsePluginsResult {
     type = "All",
     category = "All",
     marketplace = "All",
-    sort = "downloads",
-    tab = "discover",
+    framework = "All",
+    agent = "claude-code",
+    sort = "popular",
     page = 1,
     limit = 24,
   } = params;
@@ -63,11 +66,12 @@ export function usePlugins(params: UsePluginsParams = {}): UsePluginsResult {
       if (type !== "All") params.set("type", type);
       if (category !== "All") params.set("category", category);
       if (marketplace !== "All") params.set("marketplace", marketplace);
-      if (tab !== "discover") params.set("tab", tab);
-
+      if (framework !== "All") params.set("framework", framework);
+      if (agent) params.set("agent", agent);
       // Map sort options to API format
       const sortMap: Record<SortOption, string> = {
-        downloads: "installs",
+        popular: "installs",
+        new: "new",
         updated: "newest",
         name: "name",
       };
@@ -90,7 +94,7 @@ export function usePlugins(params: UsePluginsParams = {}): UsePluginsResult {
     } finally {
       setIsLoading(false);
     }
-  }, [search, type, category, marketplace, sort, tab, page, limit]);
+  }, [search, type, category, marketplace, framework, agent, sort, page, limit]);
 
   useEffect(() => {
     fetchPlugins();

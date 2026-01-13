@@ -1,47 +1,59 @@
 "use client";
 
 import Link from "next/link";
-import { Terminal, Github } from "lucide-react";
+import Image from "next/image";
+import { Github, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthButton } from "@/components/auth";
+import { UnifiedSearch } from "@/components/search";
 import { cn } from "@/lib/utils";
 import type { TabOption } from "@/hooks/usePlugins";
+import type { PluginWithMarketplace, Framework } from "@/types/database";
 
 interface HeaderProps {
   activeTab: TabOption;
   onTabChange: (tab: TabOption) => void;
   bookmarkCount?: number;
+  plugins?: PluginWithMarketplace[];
+  frameworks?: Framework[];
+  onPluginSelect?: (plugin: PluginWithMarketplace) => void;
+  onFrameworkSelect?: (framework: Framework) => void;
+  onSearch?: (query: string) => void;
 }
 
 const tabs: { value: TabOption; label: string }[] = [
-  { value: "discover", label: "Discover" },
-  { value: "featured", label: "Featured" },
-  { value: "new", label: "New" },
+  { value: "plugins", label: "Plugins" },
   { value: "frameworks", label: "Frameworks" },
-  { value: "bookmarks", label: "Bookmarks" },
 ];
 
 export function Header({
   activeTab,
   onTabChange,
   bookmarkCount = 0,
+  plugins = [],
+  frameworks = [],
+  onPluginSelect,
+  onFrameworkSelect,
+  onSearch,
 }: HeaderProps) {
   return (
     <header className="relative border-b border-border glass-strong sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 gap-4">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-violet-500 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-shadow">
-              <Terminal size={20} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight">Plugin Hub</h1>
-              <p className="text-xs text-muted-foreground -mt-0.5">for Claude Code</p>
-            </div>
+          <Link href="/" className="flex items-center flex-shrink-0">
+            <Image
+              src="https://yafmezgaogzlwujhqxev.supabase.co/storage/v1/object/public/assets/logo/augs-dark.svg"
+              alt="Augs"
+              width={84}
+              height={29}
+              preload={true}
+              unoptimized
+              className="h-7 w-auto"
+            />
           </Link>
 
-          {/* Navigation */}
+          {/* Navigation Tabs */}
           <nav className="hidden md:flex items-center gap-1">
             {tabs.map((tab) => (
               <button
@@ -55,17 +67,42 @@ export function Header({
                 )}
               >
                 {tab.label}
-                {tab.value === "bookmarks" && bookmarkCount > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 text-xs bg-primary/20 text-primary rounded-full">
-                    {bookmarkCount}
-                  </span>
-                )}
               </button>
             ))}
           </nav>
 
+          {/* Unified Search */}
+          <div className="flex-1 max-w-md hidden lg:block">
+            <UnifiedSearch
+              plugins={plugins}
+              frameworks={frameworks}
+              onPluginSelect={(plugin) => onPluginSelect?.(plugin)}
+              onFrameworkSelect={(framework) => onFrameworkSelect?.(framework)}
+              onSearchSubmit={(query) => onSearch?.(query)}
+            />
+          </div>
+
           {/* Actions */}
           <div className="flex items-center gap-2">
+            {/* Bookmarks Icon */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onTabChange("bookmarks")}
+              className={cn(
+                "relative text-muted-foreground hover:text-foreground",
+                activeTab === "bookmarks" && "bg-secondary text-foreground"
+              )}
+            >
+              <Bookmark size={20} />
+              {bookmarkCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-[10px] font-medium bg-primary text-primary-foreground rounded-full flex items-center justify-center">
+                  {bookmarkCount > 99 ? "99+" : bookmarkCount}
+                </span>
+              )}
+              <span className="sr-only">Bookmarks</span>
+            </Button>
+
             <Button
               variant="ghost"
               size="icon"
@@ -101,13 +138,22 @@ export function Header({
               )}
             >
               {tab.label}
-              {tab.value === "bookmarks" && bookmarkCount > 0 && (
-                <span className="ml-1.5 text-xs text-primary">
-                  ({bookmarkCount})
-                </span>
-              )}
             </button>
           ))}
+          <button
+            onClick={() => onTabChange("bookmarks")}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-1.5",
+              activeTab === "bookmarks"
+                ? "bg-secondary text-foreground"
+                : "text-muted-foreground"
+            )}
+          >
+            <Bookmark size={14} />
+            {bookmarkCount > 0 && (
+              <span className="text-xs text-primary">({bookmarkCount})</span>
+            )}
+          </button>
         </nav>
       </div>
     </header>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Copy, Check, Github, ExternalLink, Terminal, Star, Bookmark } from "lucide-react";
 import {
   Dialog,
@@ -13,7 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { getToolStyle, formatStars } from "./framework-utils";
-import type { Framework } from "@/types/database";
+import { usePluginFrameworks } from "@/hooks/usePluginFrameworks";
+import { getPluginTypeConfig, formatNumber } from "@/components/plugin/plugin-utils";
+import { getCompatibleAgents } from "@/lib/agents";
+import type { Framework, PluginWithMarketplace, PluginType } from "@/types/database";
 
 interface FrameworkModalProps {
   framework: Framework | null;
@@ -21,6 +24,7 @@ interface FrameworkModalProps {
   onOpenChange: (open: boolean) => void;
   isBookmarked?: boolean;
   onToggleBookmark?: () => void;
+  onPluginClick?: (plugin: PluginWithMarketplace) => void;
 }
 
 export function FrameworkModal({
@@ -29,12 +33,23 @@ export function FrameworkModal({
   onOpenChange,
   isBookmarked,
   onToggleBookmark,
+  onPluginClick,
 }: FrameworkModalProps) {
   const [copied, setCopied] = useState(false);
+  const [plugins, setPlugins] = useState<PluginWithMarketplace[]>([]);
+  const { getPluginsForFramework } = usePluginFrameworks();
+
+  // Fetch plugins when modal opens with a framework
+  useEffect(() => {
+    if (open && framework?.id) {
+      getPluginsForFramework(framework.id).then(setPlugins);
+    }
+  }, [open, framework?.id, getPluginsForFramework]);
 
   if (!framework) return null;
 
   const toolStyle = getToolStyle(framework.install_tool);
+  const compatibleAgents = getCompatibleAgents(framework.id);
 
   const copyCommand = async () => {
     try {
@@ -113,6 +128,32 @@ export function FrameworkModal({
             {framework.description || "No description available"}
           </p>
 
+          {/* Works with agents */}
+          <div>
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+              Works With
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {compatibleAgents.map((agent) => (
+                <Badge
+                  key={agent.id}
+                  variant="outline"
+                  className="text-sm px-3 py-1"
+                  style={{
+                    borderColor: `${agent.color}50`,
+                    backgroundColor: `${agent.color}10`,
+                  }}
+                >
+                  <span
+                    className="inline-block w-2 h-2 rounded-full mr-2"
+                    style={{ backgroundColor: agent.color }}
+                  />
+                  {agent.name}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
           {/* Prerequisites */}
           {framework.prerequisites && framework.prerequisites.length > 0 && (
             <div>
@@ -175,6 +216,50 @@ export function FrameworkModal({
               </Button>
             )}
           </div>
+
+          {/* Compatible Plugins */}
+          {plugins.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                Compatible Plugins ({plugins.length})
+              </h3>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {plugins.map((plugin) => {
+                  const typeConfig = getPluginTypeConfig(plugin.plugin_type as PluginType);
+                  const TypeIcon = typeConfig.icon;
+                  return (
+                    <button
+                      key={plugin.id}
+                      onClick={() => onPluginClick?.(plugin)}
+                      className="w-full flex items-center gap-3 p-3 rounded-lg border border-border bg-secondary/30 hover:bg-secondary transition-colors text-left"
+                    >
+                      <div
+                        className={cn(
+                          "w-8 h-8 rounded-md flex items-center justify-center border",
+                          typeConfig.colorClass,
+                          typeConfig.bgClass,
+                          typeConfig.borderClass
+                        )}
+                      >
+                        <TypeIcon size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium font-mono text-sm truncate">
+                          {plugin.name}
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {plugin.description || "No description"}
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatNumber(plugin.install_count)}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

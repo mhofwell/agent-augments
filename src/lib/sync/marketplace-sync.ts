@@ -237,5 +237,123 @@ export async function syncAllMarketplaces(): Promise<SyncSummary> {
     `[Sync] Complete. ${summary.successfulSyncs}/${summary.totalMarketplaces} successful, ${summary.totalPlugins} total plugins, ${summary.duration}ms`
   );
 
+  // Link plugins to frameworks based on content matching
+  const linksCreated = await linkPluginsToFrameworks();
+  console.log(`[Sync] Created ${linksCreated} plugin-framework links`);
+
   return summary;
+}
+
+// Detect frameworks mentioned in plugin name/description
+export async function linkPluginsToFrameworks(): Promise<number> {
+  const supabase = createAdminClient();
+
+  console.log("[Sync] Linking plugins to frameworks...");
+
+  // Get all active frameworks
+  const { data: frameworks, error: fwError } = await supabase
+    .from("frameworks")
+    .select("id, slug, name")
+    .eq("is_active", true);
+
+  if (fwError || !frameworks) {
+    console.log(`[Sync] Failed to fetch frameworks: ${fwError?.message}`);
+    return 0;
+  }
+
+  // Get all plugins
+  const { data: plugins, error: plError } = await supabase
+    .from("plugins")
+    .select("id, name, description, tags");
+
+  if (plError || !plugins) {
+    console.log(`[Sync] Failed to fetch plugins: ${plError?.message}`);
+    return 0;
+  }
+
+  // Build search patterns for each framework
+  const frameworkPatterns = frameworks.map((fw) => ({
+    id: fw.id,
+    patterns: buildFrameworkPatterns(fw.name, fw.slug),
+  }));
+
+  // Find matches
+  const links: { plugin_id: string; framework_id: string }[] = [];
+
+  for (const plugin of plugins) {
+    const searchText = [
+      plugin.name || "",
+      plugin.description || "",
+      ...(plugin.tags || []),
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    for (const fw of frameworkPatterns) {
+      if (fw.patterns.some((pattern) => searchText.includes(pattern))) {
+        links.push({
+          plugin_id: plugin.id,
+          framework_id: fw.id,
+        });
+      }
+    }
+  }
+
+  if (links.length === 0) {
+    console.log("[Sync] No plugin-framework matches found");
+    return 0;
+  }
+
+  // Clear existing links and insert new ones
+  // Using upsert with onConflict to avoid duplicates
+  const { error: deleteError } = await supabase
+    .from("plugin_frameworks")
+    .delete()
+    .gte("id", "00000000-0000-0000-0000-000000000000"); // Delete all
+
+  if (deleteError) {
+    console.log(`[Sync] Failed to clear existing links: ${deleteError.message}`);
+  }
+
+  const { error: insertError } = await supabase
+    .from("plugin_frameworks")
+    .insert(links);
+
+  if (insertError) {
+    console.log(`[Sync] Failed to insert links: ${insertError.message}`);
+    return 0;
+  }
+
+  console.log(`[Sync] Created ${links.length} plugin-framework links`);
+  return links.length;
+}
+
+// Build search patterns for a framework
+function buildFrameworkPatterns(name: string, slug: string): string[] {
+  const patterns: string[] = [];
+
+  // Add lowercase versions
+  patterns.push(name.toLowerCase());
+  patterns.push(slug.toLowerCase());
+
+  // Add common variations
+  // e.g., "BMAD Method" -> "bmad", "bmad-method"
+  const slugified = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  if (slugified && !patterns.includes(slugified)) {
+    patterns.push(slugified);
+  }
+
+  // Add without common suffixes
+  const withoutSuffix = name
+    .toLowerCase()
+    .replace(/\s*(method|framework|system|kit|mode)$/i, "")
+    .trim();
+  if (withoutSuffix && !patterns.includes(withoutSuffix)) {
+    patterns.push(withoutSuffix);
+  }
+
+  return patterns.filter((p) => p.length >= 3); // Skip very short patterns
 }
