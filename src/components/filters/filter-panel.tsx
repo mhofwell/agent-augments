@@ -10,8 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { pluginTypeConfig } from "@/components/plugin/plugin-utils";
-import type { PluginType, Marketplace, Framework } from "@/types/database";
+import type { Marketplace, Framework } from "@/types/database";
 import type { SortOption } from "@/hooks";
 
 const sortOptions: { value: SortOption; label: string }[] = [
@@ -38,19 +37,9 @@ const categories = [
   "Git",
 ] as const;
 
-const typeOptions: { value: PluginType | "All"; label: string }[] = [
-  { value: "All", label: "All Types" },
-  ...Object.entries(pluginTypeConfig).map(([value, config]) => ({
-    value: value as PluginType,
-    label: config.label + "s",
-  })),
-];
-
 interface FilterPanelProps {
   category: string;
   onCategoryChange: (category: string) => void;
-  type: PluginType | "All";
-  onTypeChange: (type: PluginType | "All") => void;
   marketplace: string;
   onMarketplaceChange: (marketplace: string) => void;
   framework: string;
@@ -66,8 +55,6 @@ interface FilterPanelProps {
 export function FilterPanel({
   category,
   onCategoryChange,
-  type,
-  onTypeChange,
   marketplace,
   onMarketplaceChange,
   framework,
@@ -80,7 +67,7 @@ export function FilterPanel({
   onToggleFilters,
 }: FilterPanelProps) {
   const hasActiveFilters =
-    category !== "All" || type !== "All" || marketplace !== "All" || framework !== "All";
+    category !== "All" || marketplace !== "All" || framework !== "All";
 
   return (
     <div className="space-y-4">
@@ -104,7 +91,7 @@ export function FilterPanel({
 
       {/* Filter dropdowns */}
       {showFilters && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 p-4 bg-card/50 rounded-xl border border-border animate-in slide-in-from-top-2 duration-200">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-card/50 rounded-xl border border-border animate-in slide-in-from-top-2 duration-200">
           {/* Category */}
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-2">
@@ -118,28 +105,6 @@ export function FilterPanel({
                 {categories.map((cat) => (
                   <SelectItem key={cat} value={cat}>
                     {cat}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Type */}
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-2">
-              Type
-            </label>
-            <Select
-              value={type}
-              onValueChange={(v) => onTypeChange(v as PluginType | "All")}
-            >
-              <SelectTrigger className="bg-secondary border-border">
-                <SelectValue placeholder="All Types" />
-              </SelectTrigger>
-              <SelectContent>
-                {typeOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
                   </SelectItem>
                 ))}
               </SelectContent>

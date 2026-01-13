@@ -204,8 +204,6 @@ function HomeContentInner() {
                 <FilterPanel
                   category={category}
                   onCategoryChange={setCategory}
-                  type={type}
-                  onTypeChange={setType}
                   marketplace={marketplace}
                   onMarketplaceChange={setMarketplace}
                   framework={framework}
@@ -224,7 +222,7 @@ function HomeContentInner() {
               <div className="flex items-center gap-3">
                 {/* Agent selector (currently only Claude Code) */}
                 <Select value={agent} onValueChange={(value) => setAgent(value as typeof agent)}>
-                  <SelectTrigger className="w-[140px] bg-secondary border-border">
+                  <SelectTrigger className="w-[160px] bg-secondary border-border">
                     <SelectValue placeholder="Select agent" />
                   </SelectTrigger>
                   <SelectContent>
