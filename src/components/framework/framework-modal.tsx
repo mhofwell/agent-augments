@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Copy, Check, Github, ExternalLink, Terminal, Star, Bookmark } from "lucide-react";
+import { Copy, Check, Github, ExternalLink, Terminal, Star, Bookmark, HelpCircle, ChevronDown } from "lucide-react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { getToolStyle, formatStars } from "./framework-utils";
 import { usePluginFrameworks } from "@/hooks/usePluginFrameworks";
@@ -36,6 +42,7 @@ export function FrameworkModal({
   onPluginClick,
 }: FrameworkModalProps) {
   const [copied, setCopied] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [plugins, setPlugins] = useState<PluginWithMarketplace[]>([]);
   const { getPluginsForFramework } = usePluginFrameworks();
 
@@ -55,6 +62,9 @@ export function FrameworkModal({
     try {
       await navigator.clipboard.writeText(framework.install_command);
       setCopied(true);
+      toast.success("Copied to clipboard", {
+        description: "Paste in your terminal to install",
+      });
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Clipboard API not available
@@ -171,8 +181,8 @@ export function FrameworkModal({
           )}
 
           {/* Install Command */}
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
               Installation
             </h3>
             <div className="flex items-center gap-2">
@@ -195,6 +205,33 @@ export function FrameworkModal({
                 )}
               </Button>
             </div>
+
+            {/* First time? Help section */}
+            <Collapsible open={helpOpen} onOpenChange={setHelpOpen}>
+              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <HelpCircle size={14} />
+                <span>First time using frameworks?</span>
+                <ChevronDown
+                  size={14}
+                  className={cn("transition-transform", helpOpen && "rotate-180")}
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-3">
+                <div className="bg-background rounded-lg border border-border p-4 space-y-3 text-sm text-muted-foreground">
+                  <ol className="list-decimal list-inside space-y-2">
+                    <li>Open your terminal in your project directory</li>
+                    <li>Copy the install command above</li>
+                    <li>Paste and run the command</li>
+                    <li>Follow any setup prompts from the framework</li>
+                  </ol>
+                  <Separator />
+                  <p className="text-xs">
+                    Frameworks are development methodologies that work with any AI coding agent.
+                    They provide structured workflows and best practices for your projects.
+                  </p>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           {/* Actions */}
