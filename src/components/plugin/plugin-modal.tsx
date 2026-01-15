@@ -35,10 +35,12 @@ import {
   formatNumber,
   formatDate,
   getMarketplaceCommand,
+  cleanDescription,
 } from "./plugin-utils";
+import { CompositionBadges } from "./composition-badges";
 import { usePluginFrameworks } from "@/hooks/usePluginFrameworks";
 import { formatStars } from "@/components/framework/framework-utils";
-import type { PluginWithMarketplace, PluginType, Framework } from "@/types/database";
+import type { PluginWithMarketplace, PluginType, PluginComposition, Framework } from "@/types/database";
 
 type InstallScope = "user" | "project" | "local";
 
@@ -166,7 +168,7 @@ export function PluginModal({
         <div className="p-6 space-y-6">
           {/* Description */}
           <p className="text-muted-foreground leading-relaxed">
-            {plugin.description || "No description available"}
+            {cleanDescription(plugin.description) || "No description available"}
           </p>
 
           {/* Stats */}
@@ -202,34 +204,16 @@ export function PluginModal({
             </div>
           )}
 
-          {/* Plugin capabilities */}
-          {(plugin.has_skills || plugin.has_agents || plugin.has_commands || plugin.has_hooks || plugin.has_mcp_servers) && (
-            <div className="flex flex-wrap gap-2">
-              {plugin.has_skills && (
-                <Badge variant="secondary" className="bg-type-skill/10 text-type-skill border-type-skill/30">
-                  Skills
-                </Badge>
-              )}
-              {plugin.has_agents && (
-                <Badge variant="secondary" className="bg-type-agent/10 text-type-agent border-type-agent/30">
-                  Agents
-                </Badge>
-              )}
-              {plugin.has_commands && (
-                <Badge variant="secondary" className="bg-type-command/10 text-type-command border-type-command/30">
-                  Commands
-                </Badge>
-              )}
-              {plugin.has_hooks && (
-                <Badge variant="secondary" className="bg-type-hook/10 text-type-hook border-type-hook/30">
-                  Hooks
-                </Badge>
-              )}
-              {plugin.has_mcp_servers && (
-                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/30">
-                  MCP Servers
-                </Badge>
-              )}
+          {/* Plugin composition - what's included */}
+          {plugin.composition && (
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                Contains
+              </h3>
+              <CompositionBadges
+                composition={plugin.composition as PluginComposition}
+                expanded
+              />
             </div>
           )}
 

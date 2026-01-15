@@ -87,3 +87,29 @@ export function getInstallCommand(pluginName: string, marketplaceRepo: string): 
 export function getMarketplaceCommand(owner: string, repo: string): string {
   return `/plugin marketplace add ${owner}/${repo}`;
 }
+
+/**
+ * Cleans up description text by removing XML tags, examples, and normalizing whitespace
+ */
+export function cleanDescription(description: string | null | undefined): string {
+  if (!description) return "";
+
+  let text = description;
+
+  // Cut off at "Examples:" or first <example> tag
+  const examplesIndex = text.search(/Examples?:|<example>/i);
+  if (examplesIndex > 0) {
+    text = text.slice(0, examplesIndex);
+  }
+
+  // Replace literal \n with spaces
+  text = text.replace(/\\n/g, " ");
+
+  // Remove any XML-like tags
+  text = text.replace(/<[^>]+>/g, "");
+
+  // Normalize whitespace
+  text = text.replace(/\s+/g, " ").trim();
+
+  return text;
+}

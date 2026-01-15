@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Github, Bookmark } from "lucide-react";
+import { Github, Bookmark, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthButton } from "@/components/auth";
 import { UnifiedSearch } from "@/components/search";
@@ -23,6 +24,7 @@ interface HeaderProps {
 
 const tabs: { value: TabOption; label: string }[] = [
   { value: "plugins", label: "Plugins" },
+  { value: "skills", label: "Skills" },
   { value: "frameworks", label: "Frameworks" },
 ];
 
@@ -36,6 +38,8 @@ export function Header({
   onFrameworkSelect,
   onSearch,
 }: HeaderProps) {
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
   return (
     <header className="relative border-b border-border glass-strong sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -84,6 +88,17 @@ export function Header({
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            {/* Mobile Search Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileSearchOpen(true)}
+              className="lg:hidden text-muted-foreground hover:text-foreground"
+            >
+              <Search size={20} />
+              <span className="sr-only">Search</span>
+            </Button>
+
             {/* Bookmarks Icon */}
             <Button
               variant="ghost"
@@ -156,6 +171,41 @@ export function Header({
           </button>
         </nav>
       </div>
+
+      {/* Mobile Search Overlay */}
+      {mobileSearchOpen && (
+        <div className="absolute inset-x-0 top-0 h-16 bg-background border-b border-border z-50 lg:hidden">
+          <div className="flex items-center h-full px-4 gap-3">
+            <div className="flex-1">
+              <UnifiedSearch
+                plugins={plugins}
+                frameworks={frameworks}
+                onPluginSelect={(plugin) => {
+                  onPluginSelect?.(plugin);
+                  setMobileSearchOpen(false);
+                }}
+                onFrameworkSelect={(framework) => {
+                  onFrameworkSelect?.(framework);
+                  setMobileSearchOpen(false);
+                }}
+                onSearchSubmit={(query) => {
+                  onSearch?.(query);
+                  setMobileSearchOpen(false);
+                }}
+              />
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileSearchOpen(false)}
+              className="flex-shrink-0 text-muted-foreground hover:text-foreground"
+            >
+              <X size={20} />
+              <span className="sr-only">Close search</span>
+            </Button>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

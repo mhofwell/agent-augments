@@ -3,6 +3,19 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const GITHUB_API_BASE = "https://api.github.com";
 const MIN_STARS = 200;
 
+// Curated frameworks with correct data (ensures these always exist with proper URLs)
+const KNOWN_FRAMEWORKS = [
+  {
+    slug: "gsd",
+    name: "Get Shit Done",
+    description: "A Claude Code framework for getting shit done efficiently",
+    install_command: "npx get-shit-done-cc",
+    install_tool: "npx",
+    github_url: "https://github.com/glittercowboy/get-shit-done",
+    color: "#10b981",
+  },
+];
+
 interface GitHubRepo {
   full_name: string;
   name: string;
@@ -190,7 +203,59 @@ export async function syncFrameworks(): Promise<FrameworkSyncResult> {
   const existingByUrl = new Map(
     existing?.map((f) => [f.github_url?.toLowerCase(), f]) || []
   );
+  const existingBySlug = new Map(
+    existing?.map((f) => [f.slug, f]) || []
+  );
   const existingSlugs = new Set(existing?.map((f) => f.slug) || []);
+
+  // Sync known/curated frameworks first (ensures correct URLs)
+  console.log("[FrameworkSync] Syncing known frameworks...");
+  for (const known of KNOWN_FRAMEWORKS) {
+    const existingFramework = existingBySlug.get(known.slug);
+
+    if (existingFramework) {
+      // Update if URL is different
+      if (existingFramework.github_url?.toLowerCase() !== known.github_url.toLowerCase()) {
+        const { error: updateError } = await supabase
+          .from("frameworks")
+          .update({
+            github_url: known.github_url,
+            homepage: known.github_url,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingFramework.id);
+
+        if (updateError) {
+          result.errors.push(`Failed to update ${known.slug}: ${updateError.message}`);
+        } else {
+          result.updated++;
+          console.log(`[FrameworkSync] Updated ${known.slug} URL → ${known.github_url}`);
+        }
+      }
+    } else {
+      // Insert new known framework
+      const { error: insertError } = await supabase.from("frameworks").insert({
+        slug: known.slug,
+        name: known.name,
+        description: known.description,
+        install_command: known.install_command,
+        install_tool: known.install_tool,
+        github_url: known.github_url,
+        homepage: known.github_url,
+        color: known.color,
+        is_active: true,
+        sort_order: 0,
+      });
+
+      if (insertError) {
+        result.errors.push(`Failed to insert ${known.slug}: ${insertError.message}`);
+      } else {
+        result.added++;
+        existingSlugs.add(known.slug);
+        console.log(`[FrameworkSync] Added known framework: ${known.name}`);
+      }
+    }
+  }
 
   // Search GitHub
   const repos = await searchGitHubFrameworks();

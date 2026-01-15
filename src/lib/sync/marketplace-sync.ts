@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchMarketplaceJson, RawPlugin } from "@/lib/github/api";
-import type { PluginType, Tables } from "@/types/database";
+import type { PluginType, PluginComposition, Tables } from "@/types/database";
 
 type Marketplace = Tables<"marketplaces">;
 
@@ -62,6 +62,43 @@ export function detectPluginType(plugin: RawPlugin): PluginType {
   if (category === "command" || category === "commands") return "command";
 
   return "unknown";
+}
+
+// Extract composition counts from plugin data
+export function extractComposition(plugin: RawPlugin): PluginComposition | null {
+  const composition: PluginComposition = {};
+
+  // Count skills
+  if (plugin.skills && Array.isArray(plugin.skills) && plugin.skills.length > 0) {
+    composition.skills = plugin.skills.length;
+  }
+
+  // Count agents
+  if (plugin.agents && Array.isArray(plugin.agents) && plugin.agents.length > 0) {
+    composition.agents = plugin.agents.length;
+  }
+
+  // Count commands
+  if (plugin.commands && Array.isArray(plugin.commands) && plugin.commands.length > 0) {
+    composition.commands = plugin.commands.length;
+  }
+
+  // Count hooks
+  if (plugin.hooks && Array.isArray(plugin.hooks) && plugin.hooks.length > 0) {
+    composition.hooks = plugin.hooks.length;
+  }
+
+  // Check for MCP servers (could be object or array)
+  if (plugin.mcpServers) {
+    if (Array.isArray(plugin.mcpServers)) {
+      composition.mcp = plugin.mcpServers.length;
+    } else if (typeof plugin.mcpServers === "object") {
+      composition.mcp = Object.keys(plugin.mcpServers).length;
+    }
+  }
+
+  // Return null if no composition data found
+  return Object.keys(composition).length > 0 ? composition : null;
 }
 
 // Sync a single marketplace
@@ -154,6 +191,7 @@ export async function syncMarketplace(marketplace: Marketplace): Promise<SyncRes
     has_commands: !!(p.commands && Array.isArray(p.commands) && p.commands.length > 0),
     has_hooks: !!(p.hooks && Array.isArray(p.hooks) && p.hooks.length > 0),
     has_mcp_servers: !!p.mcpServers,
+    composition: extractComposition(p),
     updated_at: new Date().toISOString(),
   }));
 

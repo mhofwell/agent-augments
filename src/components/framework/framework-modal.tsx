@@ -20,7 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { getToolStyle, formatStars } from "./framework-utils";
 import { usePluginFrameworks } from "@/hooks/usePluginFrameworks";
-import { getPluginTypeConfig, formatNumber } from "@/components/plugin/plugin-utils";
+import { getPluginTypeConfig, formatNumber, cleanDescription } from "@/components/plugin/plugin-utils";
 import { getCompatibleAgents } from "@/lib/agents";
 import type { Framework, PluginWithMarketplace, PluginType } from "@/types/database";
 
@@ -73,7 +73,7 @@ export function FrameworkModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl bg-card border-border p-0 gap-0 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl bg-card border-border p-0 gap-0 max-h-[90vh] overflow-y-auto overflow-x-hidden">
         {/* Header */}
         <DialogHeader className="p-6 pb-4">
           <div className="flex items-start gap-4">
@@ -83,21 +83,21 @@ export function FrameworkModal({
             >
               <Terminal size={28} style={{ color: framework.color || undefined }} />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <DialogTitle className="text-2xl font-bold">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <DialogTitle className="text-2xl font-bold break-words">
                   {framework.name}
                 </DialogTitle>
                 {framework.install_tool && (
                   <Badge
                     variant="outline"
-                    className={cn("text-xs uppercase", toolStyle.bg, toolStyle.text, toolStyle.border)}
+                    className={cn("text-xs uppercase flex-shrink-0", toolStyle.bg, toolStyle.text, toolStyle.border)}
                   >
                     {framework.install_tool}
                   </Badge>
                 )}
                 {framework.stars && framework.stars > 0 && (
-                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1 text-sm text-muted-foreground flex-shrink-0">
                     <Star size={14} className="text-amber-400 fill-amber-400" />
                     {formatStars(framework.stars)}
                   </span>
@@ -132,9 +132,9 @@ export function FrameworkModal({
         <Separator />
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 overflow-hidden">
           {/* Description */}
-          <p className="text-muted-foreground leading-relaxed">
+          <p className="text-muted-foreground leading-relaxed break-words">
             {framework.description || "No description available"}
           </p>
 
@@ -185,9 +185,9 @@ export function FrameworkModal({
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
               Installation
             </h3>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <code
-                className="flex-1 px-4 py-3 bg-background rounded-lg font-mono text-sm border border-border overflow-x-auto"
+                className="flex-1 min-w-0 px-4 py-3 bg-background rounded-lg font-mono text-sm border border-border overflow-x-auto whitespace-nowrap"
                 style={{ color: framework.color || undefined }}
               >
                 {framework.install_command}
@@ -285,7 +285,7 @@ export function FrameworkModal({
                           {plugin.name}
                         </div>
                         <div className="text-xs text-muted-foreground truncate max-w-full">
-                          {plugin.description || "No description"}
+                          {cleanDescription(plugin.description) || "No description"}
                         </div>
                       </div>
                       <div className="text-xs text-muted-foreground flex-shrink-0">

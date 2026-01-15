@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { PluginWithMarketplace, PluginType } from "@/types/database";
 
 export type SortOption = "popular" | "new" | "updated" | "name";
-export type TabOption = "plugins" | "frameworks" | "bookmarks";
+export type TabOption = "plugins" | "skills" | "frameworks" | "bookmarks";
 export type AgentId = "claude-code" | "cursor" | "windsurf" | "codex" | "all";
 
 interface UsePluginsParams {

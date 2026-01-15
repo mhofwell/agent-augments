@@ -14,18 +14,23 @@ bun run lint       # Lint (verify before PR)
 bun run cron:sync  # Sync marketplaces + discover frameworks (weekly)
 ```
 
+## Routes
+- `/` - Curated landing page (Frameworks → Official → Community sections)
+- `/browse` - Full plugin catalog with search, filters, and grid/list view
+
 ## Status
-Phase 5 complete (deployed). See `.wip/STATUS.md` for details and next steps.
+See `.wip/STATUS.md` for details and next steps.
 
 ## Supabase
 - Project ID: `yafmezgaogzlwujhqxev`
-- Tables: `marketplaces`, `plugins`, `bookmarks`, `install_events`, `frameworks`, `plugin_frameworks`
+- Tables: `marketplaces`, `plugins`, `bookmarks`, `install_events`, `frameworks`, `plugin_frameworks`, `framework_bookmarks`
 - Use `createClient()` from `@/lib/supabase/client` (browser) or `@/lib/supabase/server` (RSC/routes)
 
 ## Patterns
 - Follow component patterns in `src/components/plugin/plugin-card.tsx`
 - Hooks return `{ data, loading, error }` - see `src/hooks/usePlugins.ts`
 - API routes use `createClient` from server, return `NextResponse.json()`
+- Use `cleanDescription()` from `plugin-utils.ts` to sanitize raw skill/plugin descriptions
 
 ## Design Rules
 - Dark mode only (oklch color system in `globals.css`)

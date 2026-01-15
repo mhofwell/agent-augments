@@ -1,22 +1,13 @@
 "use client";
 
 import { useState, useMemo, Suspense } from "react";
-import { Package, Zap, Layers, Github, Terminal, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { AmbientBackground, Header, InstallFooter } from "@/components/layout";
-import { PluginGrid, PluginModal } from "@/components/plugin";
-import { FrameworkGrid, FrameworkModal } from "@/components/framework";
-import { SearchInput, FilterPanel, ViewToggle, TypeQuickFilter } from "@/components/filters";
-import { usePlugins, useMarketplaces, useBookmarks, useFrameworkBookmarks, useUrlFilters, useFrameworks } from "@/hooks";
+import Link from "next/link";
+import { Search, Shield, Layers, ChevronRight, Sparkles } from "lucide-react";
+import { AmbientBackground, SiteHeader, InstallFooter } from "@/components/layout";
+import { PluginCard, PluginModal } from "@/components/plugin";
+import { FrameworkCard, FrameworkModal } from "@/components/framework";
+import { usePlugins, useMarketplaces, useBookmarks, useFrameworkBookmarks, useFrameworks } from "@/hooks";
 import type { PluginWithMarketplace, Framework } from "@/types/database";
-import { agents } from "@/lib/agents";
 
 // Wrap with Suspense for useSearchParams
 export function HomeContent() {
@@ -36,326 +27,234 @@ function HomeLoading() {
 }
 
 function HomeContentInner() {
-  // URL-based filters
-  const {
-    search,
-    type,
-    category,
-    marketplace,
-    framework,
-    agent,
-    sort,
-    tab,
-    view,
-    setSearch,
-    setType,
-    setCategory,
-    setMarketplace,
-    setFramework,
-    setAgent,
-    setSort,
-    setTab,
-    setView,
-  } = useUrlFilters();
-
-  // Local UI state
-  const [showFilters, setShowFilters] = useState(false);
+  // Local state
+  const [search, setSearch] = useState("");
   const [selectedPlugin, setSelectedPlugin] = useState<PluginWithMarketplace | null>(null);
   const [selectedFramework, setSelectedFramework] = useState<Framework | null>(null);
-  const [frameworkSearch, setFrameworkSearch] = useState("");
-  const [frameworkTool, setFrameworkTool] = useState("All");
 
   // Data hooks
   const { marketplaces, officialIds } = useMarketplaces();
   const { frameworks, isLoading: frameworksLoading } = useFrameworks();
-  const { bookmarks, bookmarkedIds, toggleBookmark, isLoading: bookmarksLoading } = useBookmarks();
+  const { bookmarkedIds, toggleBookmark } = useBookmarks();
   const { bookmarkedIds: frameworkBookmarkedIds, toggleBookmark: toggleFrameworkBookmark } = useFrameworkBookmarks();
 
-  // Fetch plugins based on current filters
+  // Fetch plugins - higher limit for better coverage
   const { plugins, isLoading, pagination } = usePlugins({
-    search,
-    type,
-    category,
-    marketplace,
-    framework,
-    agent,
-    sort,
+    search: search || undefined,
+    sort: "popular",
+    limit: 100, // Fetch more for better section coverage
   });
 
-  // For bookmarks tab, use bookmarked plugins
-  const displayPlugins = useMemo(() => {
-    if (tab === "bookmarks") {
-      return bookmarks.map((b) => b.plugin).filter(Boolean) as PluginWithMarketplace[];
-    }
+  // Separate official plugins from community, sorted by install count
+  const officialPlugins = useMemo(() => {
+    return plugins
+      .filter(p => officialIds.has(p.marketplace_id))
+      .sort((a, b) => (b.install_count || 0) - (a.install_count || 0));
+  }, [plugins, officialIds]);
+
+  const communityPlugins = useMemo(() => {
+    return plugins
+      .filter(p => !officialIds.has(p.marketplace_id))
+      .sort((a, b) => (b.install_count || 0) - (a.install_count || 0));
+  }, [plugins, officialIds]);
+
+  // Search results - show when searching
+  const searchResults = useMemo(() => {
+    if (!search) return [];
     return plugins;
-  }, [tab, bookmarks, plugins]);
-
-  // Filter frameworks by search and tool
-  const filteredFrameworks = useMemo(() => {
-    let result = frameworks;
-
-    if (frameworkSearch) {
-      const searchLower = frameworkSearch.toLowerCase();
-      result = result.filter(
-        (fw) =>
-          fw.name.toLowerCase().includes(searchLower) ||
-          fw.description?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    if (frameworkTool !== "All") {
-      result = result.filter((fw) => fw.install_tool === frameworkTool);
-    }
-
-    return result;
-  }, [frameworks, frameworkSearch, frameworkTool]);
-
-  // Get unique install tools for filter dropdown
-  const frameworkTools = useMemo(() => {
-    const tools = new Set(frameworks.map((fw) => fw.install_tool).filter(Boolean));
-    return Array.from(tools).sort();
-  }, [frameworks]);
-
-  // Stats
-  const totalPlugins = pagination.total || plugins.length;
-  const totalMarketplaces = marketplaces.length;
+  }, [search, plugins]);
 
   // Get the selected plugin's official status
   const isSelectedPluginOfficial = selectedPlugin
     ? officialIds.has(selectedPlugin.marketplace_id)
     : false;
 
+  // Count totals - use pagination.total for accurate count
+  const totalAugments = pagination.total || plugins.length;
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <AmbientBackground />
 
-      <Header
-        activeTab={tab}
-        onTabChange={setTab}
-        bookmarkCount={bookmarkedIds.size}
-        plugins={plugins}
-        frameworks={frameworks}
-        onPluginSelect={setSelectedPlugin}
-        onFrameworkSelect={(framework) => {
-          setTab("frameworks");
-          setSelectedFramework(framework);
-        }}
-        onSearch={(query) => {
-          setTab("plugins");
-          setSearch(query);
-        }}
-      />
+      <SiteHeader />
 
-      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <main className="relative max-w-6xl mx-auto px-4 sm:px-6">
         {/* Hero Section */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-3xl font-bold mb-2">
-                {tab === "plugins" && "Plugins"}
-                {tab === "frameworks" && "Frameworks"}
-                {tab === "bookmarks" && "Bookmarks"}
-              </h2>
-              <p className="text-muted-foreground">
-                {tab === "plugins" &&
-                  `${totalPlugins} plugins across ${totalMarketplaces} marketplaces`}
-                {tab === "frameworks" && "Structured methodologies for AI-assisted development"}
-                {tab === "bookmarks" && `${bookmarkedIds.size + frameworkBookmarkedIds.size} saved items`}
+        <section className="py-16 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
+            Augments for your coding agent
+          </h1>
+          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Find curated frameworks, official plugins, and community contributions for Claude Code.
+          </p>
+
+          {/* Search */}
+          <div className="relative max-w-xl mx-auto">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search augments... (e.g. 'PR review', 'documentation', 'testing')"
+              className="w-full pl-12 pr-4 py-4 rounded-2xl bg-secondary/50 border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-lg"
+            />
+          </div>
+        </section>
+
+        {/* Search Results */}
+        {search && (
+          <section className="pb-12">
+            <h2 className="text-sm font-medium text-muted-foreground mb-4">
+              {searchResults.length} results for "{search}"
+            </h2>
+            {searchResults.length > 0 ? (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {searchResults.slice(0, 12).map((plugin) => (
+                  <PluginCard
+                    key={plugin.id}
+                    plugin={plugin}
+                    isOfficial={officialIds.has(plugin.marketplace_id)}
+                    isBookmarked={bookmarkedIds.has(plugin.id)}
+                    onClick={() => setSelectedPlugin(plugin)}
+                    onBookmarkToggle={() => toggleBookmark(plugin.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-8">
+                No augments found. Try a different search term.
               </p>
-            </div>
-
-            {/* Quick stats */}
-            {tab === "plugins" && (
-              <div className="flex gap-4">
-                <div className="flex items-center gap-2 px-3 py-2 bg-card rounded-lg border border-border">
-                  <Package size={16} className="text-primary" />
-                  <span className="font-semibold">{totalPlugins}</span>
-                  <span className="text-xs text-muted-foreground">Plugins</span>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-2 bg-card rounded-lg border border-border">
-                  <Layers size={16} className="text-type-agent" />
-                  <span className="font-semibold">{totalMarketplaces}</span>
-                  <span className="text-xs text-muted-foreground">Marketplaces</span>
-                </div>
-              </div>
             )}
-            {tab === "frameworks" && (
-              <div className="flex gap-4">
-                <div className="flex items-center gap-2 px-3 py-2 bg-card rounded-lg border border-border">
-                  <Terminal size={16} className="text-primary" />
-                  <span className="font-semibold">{filteredFrameworks.length}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {filteredFrameworks.length === frameworks.length ? "Frameworks" : `of ${frameworks.length}`}
-                  </span>
+          </section>
+        )}
+
+        {/* Main content - only show when not searching */}
+        {!search && (
+          <>
+            {/* Frameworks Section - FIRST */}
+            <section className="pb-12">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Layers size={20} className="text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold">Frameworks</h2>
+                    <p className="text-sm text-muted-foreground">Collections of augments for common workflows</p>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* Search and Filters (only show on plugins tab) */}
-          {tab === "plugins" && (
-            <div className="space-y-4">
-              <div className="flex gap-3">
-                <SearchInput
-                  value={search}
-                  onChange={setSearch}
-                  placeholder="Search plugins, commands, agents..."
-                />
-                <FilterPanel
-                  category={category}
-                  onCategoryChange={setCategory}
-                  marketplace={marketplace}
-                  onMarketplaceChange={setMarketplace}
-                  framework={framework}
-                  onFrameworkChange={setFramework}
-                  sortBy={sort}
-                  onSortChange={setSort}
-                  marketplaces={marketplaces}
-                  frameworks={frameworks}
-                  showFilters={showFilters}
-                  onToggleFilters={() => setShowFilters(!showFilters)}
-                />
-                <ViewToggle value={view} onChange={setView} />
-              </div>
-
-              {/* Agent selector and quick type filters */}
-              <div className="flex items-center gap-3">
-                {/* Agent selector (currently only Claude Code) */}
-                <Select value={agent} onValueChange={(value) => setAgent(value as typeof agent)}>
-                  <SelectTrigger className="w-[160px] bg-secondary border-border">
-                    <SelectValue placeholder="Select agent" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {agents.map((a) => (
-                      <SelectItem key={a.id} value={a.id} disabled={a.id !== "claude-code"}>
-                        <span className="flex items-center gap-2">
-                          <span
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: a.color }}
-                          />
-                          {a.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <TypeQuickFilter value={type} onChange={setType} />
-              </div>
-            </div>
-          )}
-
-          {/* Search and Filters for Frameworks tab */}
-          {tab === "frameworks" && (
-            <div className="flex gap-3">
-              <div className="relative flex-1 max-w-md">
-                <Search
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                />
-                <Input
-                  type="text"
-                  value={frameworkSearch}
-                  onChange={(e) => setFrameworkSearch(e.target.value)}
-                  placeholder="Search frameworks..."
-                  className="pl-10 bg-secondary border-border"
-                />
-              </div>
-              {frameworkTools.length > 1 && (
-                <Select value={frameworkTool} onValueChange={setFrameworkTool}>
-                  <SelectTrigger className="w-40 bg-secondary border-border">
-                    <SelectValue placeholder="All Tools" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="All">All Tools</SelectItem>
-                    {frameworkTools.map((tool) => (
-                      <SelectItem key={tool} value={tool!}>
-                        {tool}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {frameworksLoading ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-40 rounded-xl bg-secondary/50 animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[...frameworks].sort((a, b) => (b.stars || 0) - (a.stars || 0)).slice(0, 6).map((framework) => (
+                    <FrameworkCard
+                      key={framework.id}
+                      framework={framework}
+                      onClick={() => setSelectedFramework(framework)}
+                    />
+                  ))}
+                </div>
               )}
-            </div>
-          )}
-        </div>
 
-        {/* Featured Section (on plugins tab when no filters and sorted by popular) */}
-        {tab === "plugins" &&
-          !search &&
-          category === "All" &&
-          type === "All" &&
-          marketplace === "All" &&
-          sort === "popular" && (
-            <div className="mb-10">
-              <div className="flex items-center gap-2 mb-4">
-                <Zap size={18} className="text-amber-400" />
-                <h3 className="font-semibold">Featured</h3>
+              {frameworks.length > 6 && (
+                <button className="mt-4 text-sm text-primary hover:underline flex items-center gap-1 mx-auto">
+                  View all {frameworks.length} frameworks
+                  <ChevronRight size={16} />
+                </button>
+              )}
+            </section>
+
+            {/* Official Section */}
+            <section className="pb-12">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-emerald-500/10">
+                    <Shield size={20} className="text-emerald-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold">Official</h2>
+                    <p className="text-sm text-muted-foreground">From Anthropic's verified marketplace</p>
+                  </div>
+                </div>
               </div>
-              <FeaturedSection
-                officialIds={officialIds}
-                bookmarkedIds={bookmarkedIds}
-                onPluginClick={setSelectedPlugin}
-                onBookmarkToggle={toggleBookmark}
-              />
-            </div>
-          )}
 
-        {/* Main Plugin Grid */}
-        {(tab === "plugins" || tab === "bookmarks") && (
-          <div className="mb-6">
-            <p className="text-sm text-muted-foreground mb-4">
-              {tab === "plugins" && `Showing ${displayPlugins.length} plugins`}
-              {tab === "bookmarks" && `${bookmarkedIds.size} bookmarked plugins`}
-            </p>
+              {isLoading ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-48 rounded-xl bg-secondary/50 animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {officialPlugins.slice(0, 6).map((plugin) => (
+                    <PluginCard
+                      key={plugin.id}
+                      plugin={plugin}
+                      isOfficial
+                      isBookmarked={bookmarkedIds.has(plugin.id)}
+                      onClick={() => setSelectedPlugin(plugin)}
+                      onBookmarkToggle={() => toggleBookmark(plugin.id)}
+                    />
+                  ))}
+                </div>
+              )}
 
-            <PluginGrid
-              plugins={displayPlugins}
-              viewMode={view}
-              isLoading={tab === "bookmarks" ? bookmarksLoading : isLoading}
-              emptyMessage={
-                tab === "bookmarks"
-                  ? "No bookmarks yet"
-                  : "No plugins found"
-              }
-              emptyDescription={
-                tab === "bookmarks"
-                  ? "Click on any plugin and bookmark it for quick access"
-                  : "Try adjusting your filters or search query"
-              }
-              bookmarkedIds={bookmarkedIds}
-              officialMarketplaceIds={officialIds}
-              onPluginClick={setSelectedPlugin}
-              onBookmarkToggle={toggleBookmark}
-            />
-          </div>
-        )}
+              {officialPlugins.length > 6 && (
+                <Link
+                  href="/browse"
+                  className="mt-4 text-sm text-primary hover:underline flex items-center gap-1 mx-auto"
+                >
+                  View all {officialPlugins.length} official augments
+                  <ChevronRight size={16} />
+                </Link>
+              )}
+            </section>
 
-        {/* Frameworks Grid */}
-        {tab === "frameworks" && (
-          <div className="mb-6">
-            <FrameworkGrid
-              frameworks={filteredFrameworks}
-              isLoading={frameworksLoading}
-              onFrameworkClick={setSelectedFramework}
-              bookmarkedIds={frameworkBookmarkedIds}
-              onToggleBookmark={toggleFrameworkBookmark}
-              emptyMessage={frameworkSearch || frameworkTool !== "All" ? "No frameworks match your filters" : "No frameworks found"}
-              emptyDescription={frameworkSearch || frameworkTool !== "All" ? "Try adjusting your search or filters" : "Check back later for development frameworks"}
-            />
-          </div>
-        )}
+            {/* Community Section */}
+            <section className="pb-12">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-violet-500/10">
+                    <Sparkles size={20} className="text-violet-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold">Community</h2>
+                    <p className="text-sm text-muted-foreground">From the community marketplaces</p>
+                  </div>
+                </div>
+                {communityPlugins.length > 6 && (
+                  <Link
+                    href="/browse"
+                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                  >
+                    View all {communityPlugins.length}
+                    <ChevronRight size={16} />
+                  </Link>
+                )}
+              </div>
 
-        {/* Marketplaces Section */}
-        {tab === "plugins" && (
-          <MarketplacesSection
-            marketplaces={marketplaces}
-            officialIds={officialIds}
-            onMarketplaceClick={(id) => {
-              setMarketplace(id);
-              setShowFilters(true);
-            }}
-          />
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {communityPlugins.slice(0, 6).map((plugin) => (
+                  <PluginCard
+                    key={plugin.id}
+                    plugin={plugin}
+                    isOfficial={false}
+                    isBookmarked={bookmarkedIds.has(plugin.id)}
+                    onClick={() => setSelectedPlugin(plugin)}
+                    onBookmarkToggle={() => toggleBookmark(plugin.id)}
+                  />
+                ))}
+              </div>
+
+            </section>
+          </>
         )}
       </main>
 
@@ -391,84 +290,6 @@ function HomeContentInner() {
       />
 
       <InstallFooter />
-    </div>
-  );
-}
-
-// Featured section - fetches top plugins by popularity
-function FeaturedSection({
-  officialIds,
-  bookmarkedIds,
-  onPluginClick,
-  onBookmarkToggle,
-}: {
-  officialIds: Set<string>;
-  bookmarkedIds: Set<string>;
-  onPluginClick: (plugin: PluginWithMarketplace) => void;
-  onBookmarkToggle: (id: string) => void;
-}) {
-  const { plugins, isLoading } = usePlugins({ sort: "popular", limit: 3 });
-
-  return (
-    <PluginGrid
-      plugins={plugins}
-      viewMode="grid"
-      isLoading={isLoading}
-      bookmarkedIds={bookmarkedIds}
-      officialMarketplaceIds={officialIds}
-      onPluginClick={onPluginClick}
-      onBookmarkToggle={onBookmarkToggle}
-    />
-  );
-}
-
-// Marketplaces section
-function MarketplacesSection({
-  marketplaces,
-  officialIds,
-  onMarketplaceClick,
-}: {
-  marketplaces: { id: string; name: string | null; github_owner: string; github_repo: string; plugin_count: number | null }[];
-  officialIds: Set<string>;
-  onMarketplaceClick: (id: string) => void;
-}) {
-  if (marketplaces.length === 0) return null;
-
-  return (
-    <div className="mt-12 pt-8 border-t border-border">
-      <div className="flex items-center gap-2 mb-4">
-        <Github size={18} className="text-muted-foreground" />
-        <h3 className="font-semibold">Marketplaces</h3>
-      </div>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {marketplaces.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => onMarketplaceClick(m.id)}
-            className="group p-4 bg-card/50 border border-border rounded-xl hover:border-border/80 hover:bg-card transition-colors text-left"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium group-hover:text-primary transition-colors">
-                {m.name || `${m.github_owner}/${m.github_repo}`}
-              </span>
-              {officialIds.has(m.id) && (
-                <span className="text-xs px-2 py-0.5 bg-primary/20 text-primary rounded-full">
-                  Official
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Package size={12} />
-                {m.plugin_count ?? 0} plugins
-              </span>
-            </div>
-            <code className="block mt-2 text-xs text-muted-foreground/60 truncate font-mono">
-              {m.github_owner}/{m.github_repo}
-            </code>
-          </button>
-        ))}
-      </div>
     </div>
   );
 }

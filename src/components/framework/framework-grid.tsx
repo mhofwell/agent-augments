@@ -11,8 +11,6 @@ interface FrameworkGridProps {
   emptyMessage?: string;
   emptyDescription?: string;
   onFrameworkClick?: (framework: Framework) => void;
-  bookmarkedIds?: Set<string>;
-  onToggleBookmark?: (frameworkId: string) => void;
 }
 
 export function FrameworkGrid({
@@ -21,8 +19,6 @@ export function FrameworkGrid({
   emptyMessage = "No frameworks found",
   emptyDescription = "Check back later for development frameworks",
   onFrameworkClick,
-  bookmarkedIds,
-  onToggleBookmark,
 }: FrameworkGridProps) {
   // Loading skeleton
   if (isLoading) {
@@ -55,8 +51,6 @@ export function FrameworkGrid({
           key={framework.id}
           framework={framework}
           onClick={() => onFrameworkClick?.(framework)}
-          isBookmarked={bookmarkedIds?.has(framework.id)}
-          onToggleBookmark={onToggleBookmark}
         />
       ))}
     </div>

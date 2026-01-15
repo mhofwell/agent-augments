@@ -1,11 +1,13 @@
 "use client";
 
-import { Download, Star, Bookmark, BookmarkCheck, Copy, Check, Terminal } from "lucide-react";
+import { Bookmark, BookmarkCheck, Copy, Check, Terminal, Star } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { getPluginTypeConfig, formatNumber, getInstallCommand } from "./plugin-utils";
-import type { PluginWithMarketplace, PluginType } from "@/types/database";
+import { getPluginTypeConfig, formatNumber, getInstallCommand, cleanDescription } from "./plugin-utils";
+import { getCategoryDisplayName } from "@/lib/publishers";
+import { CompositionBadges } from "./composition-badges";
+import type { PluginWithMarketplace, PluginType, PluginComposition } from "@/types/database";
 
 interface PluginCardProps {
   plugin: PluginWithMarketplace;
@@ -46,25 +48,36 @@ export function PluginCard({
   return (
     <div
       className={cn(
-        "group relative bg-card/50 border border-border rounded-xl hover:border-border/80 hover:bg-card transition-all duration-300 cursor-pointer flex flex-col",
+        "group relative bg-card/50 border border-border rounded-xl",
+        "hover:border-border/80 hover:bg-card hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20",
+        "transition-all duration-300 ease-out cursor-pointer flex flex-col overflow-hidden",
         compact ? "p-4" : "p-5"
       )}
       onClick={onClick}
     >
-      {/* Top row: Type badge left, badges + bookmark right */}
+      {/* Top row: Type badge + installs left, badges + bookmark right */}
       <div className="flex items-start justify-between mb-3">
-        {/* Type badge - top left */}
-        <span
-          className={cn(
-            "flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-md border",
-            typeConfig.colorClass,
-            typeConfig.bgClass,
-            typeConfig.borderClass
+        {/* Type badge and install count - top left */}
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              "flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-md border",
+              typeConfig.colorClass,
+              typeConfig.bgClass,
+              typeConfig.borderClass
+            )}
+          >
+            <TypeIcon size={12} />
+            {typeConfig.label}
+          </span>
+          {/* Install count as quality signal */}
+          {(plugin.install_count || 0) > 0 && (
+            <span className="flex items-center gap-1 text-xs text-amber-400">
+              <Star size={12} className="fill-amber-400" />
+              {formatNumber(plugin.install_count)}
+            </span>
           )}
-        >
-          <TypeIcon size={12} />
-          {typeConfig.label}
-        </span>
+        </div>
 
         {/* Right side: New/Official badges + Agent badge + Bookmark */}
         <div className="flex items-center gap-2">
@@ -83,7 +96,7 @@ export function PluginCard({
             <Terminal size={10} />
             Claude
           </span>
-          {/* Bookmark button */}
+          {/* Bookmark button - always visible when bookmarked, otherwise on hover */}
           {onBookmarkToggle && (
             <button
               onClick={(e) => {
@@ -113,48 +126,55 @@ export function PluginCard({
         </p>
       </div>
 
-      {/* Description */}
+      {/* Description - 2 lines by default, expands on hover */}
       <p
         className={cn(
-          "text-muted-foreground text-sm leading-relaxed mb-4 flex-1",
-          compact ? "line-clamp-2" : "line-clamp-3"
+          "text-muted-foreground text-sm leading-relaxed flex-1 transition-all duration-200",
+          compact ? "line-clamp-2 mb-3" : "line-clamp-2 group-hover:line-clamp-4 mb-3"
         )}
       >
-        {plugin.description || "No description available"}
+        {cleanDescription(plugin.description) || "No description available"}
       </p>
 
-      {/* Stats */}
-      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
-        <span className="flex items-center gap-1">
-          <Download size={12} />
-          {formatNumber(plugin.install_count)}
-        </span>
-        {plugin.category && (
-          <span className="flex items-center gap-1">
-            <Star size={12} />
-            {plugin.category}
+      {/* Category badge */}
+      {plugin.category && (
+        <div className="mb-3">
+          <span className="px-1.5 py-0.5 bg-secondary/30 group-hover:bg-secondary/50 rounded text-xs text-muted-foreground/60 group-hover:text-muted-foreground transition-colors">
+            {getCategoryDisplayName(plugin.category)}
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Install command with copy button */}
+      {/* Composition badges - visible by default */}
+      <CompositionBadges
+        composition={plugin.composition as PluginComposition | null}
+        className="mb-0"
+      />
+
+      {/* Install command - slides up on hover */}
       <div
-        className="flex items-center gap-2 bg-background rounded-lg border border-border overflow-hidden"
+        className={cn(
+          "absolute bottom-0 left-0 right-0 transform transition-transform duration-300 ease-out",
+          "translate-y-full group-hover:translate-y-0",
+          "bg-background/95 backdrop-blur-sm border-t border-border"
+        )}
         onClick={(e) => e.stopPropagation()}
       >
-        <code className="flex-1 px-3 py-2 font-mono text-xs text-primary truncate">
-          {installCommand}
-        </code>
-        <button
-          onClick={handleCopy}
-          className="flex-shrink-0 p-2 hover:bg-secondary transition-colors border-l border-border"
-        >
-          {copied ? (
-            <Check size={14} className="text-emerald-400" />
-          ) : (
-            <Copy size={14} className="text-muted-foreground" />
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <code className="flex-1 px-4 py-3 font-mono text-xs text-primary truncate">
+            {installCommand}
+          </code>
+          <button
+            onClick={handleCopy}
+            className="flex-shrink-0 p-3 hover:bg-secondary/50 transition-colors border-l border-border"
+          >
+            {copied ? (
+              <Check size={14} className="text-emerald-400" />
+            ) : (
+              <Copy size={14} className="text-muted-foreground hover:text-foreground" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Hover overlay */}

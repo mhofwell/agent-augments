@@ -242,6 +242,50 @@ export type Database = {
           },
         ]
       }
+      skills: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          description: string | null
+          plugin_id: string | null
+          agent_compatibility: string[]
+          category: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          description?: string | null
+          plugin_id?: string | null
+          agent_compatibility?: string[]
+          category?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          description?: string | null
+          plugin_id?: string | null
+          agent_compatibility?: string[]
+          category?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skills_plugin_id_fkey"
+            columns: ["plugin_id"]
+            isOneToOne: false
+            referencedRelation: "plugins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plugins: {
         Row: {
           agent: string
@@ -249,6 +293,7 @@ export type Database = {
           author_name: string | null
           author_url: string | null
           category: string | null
+          composition: Json | null
           created_at: string | null
           description: string | null
           has_agents: boolean | null
@@ -273,6 +318,7 @@ export type Database = {
           author_name?: string | null
           author_url?: string | null
           category?: string | null
+          composition?: Json | null
           created_at?: string | null
           description?: string | null
           has_agents?: boolean | null
@@ -297,6 +343,7 @@ export type Database = {
           author_name?: string | null
           author_url?: string | null
           category?: string | null
+          composition?: Json | null
           created_at?: string | null
           description?: string | null
           has_agents?: boolean | null
@@ -450,6 +497,21 @@ export type InstallEvent = Tables<"install_events">
 export type Framework = Tables<"frameworks">
 export type PluginFramework = Tables<"plugin_frameworks">
 export type FrameworkBookmark = Tables<"framework_bookmarks">
+export type Skill = Tables<"skills">
+
+// Skill with parent plugin info (for joined queries)
+export type SkillWithPlugin = Skill & {
+  plugin: Pick<Plugin, "id" | "name" | "plugin_type" | "marketplace_id"> | null
+}
+
+// Composition type for plugin contents
+export type PluginComposition = {
+  skills?: number
+  commands?: number
+  agents?: number
+  hooks?: number
+  mcp?: number
+}
 
 // Plugin with marketplace info (for joined queries)
 export type PluginWithMarketplace = Plugin & {

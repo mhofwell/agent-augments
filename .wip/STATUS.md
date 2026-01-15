@@ -10,33 +10,99 @@
 
 ## Current Work
 
-**Phase 6: UX Redesign** - Complete
+**Browse Page & UX Polish** - Complete ✅
 
-Implementing the UX audit plan from `.wip/UX_AUDIT_PLAN.md`.
+### Latest Changes (Jan 2025)
 
-**Completed:**
-- Phase 1: Rebranding & Navigation
-- Phase 2: Framework "Works with" Badges
-- Phase 3: Plugin Card & Install UX
-- Phase 4: Search & Filter Polish
-- Phase 5: Multi-Agent Architecture Prep
+**Browse Page (`/browse`)**
+- New dedicated browse page with full filtering capabilities
+- Search, type filters (Skills/Agents/Commands/Hooks/Bundles), category/framework/sort dropdowns
+- Grid/list view toggle
+- "View all" links on home page now navigate to `/browse`
 
-**Next:**
-- User profiles / public bookmark lists
-- Plugin install analytics dashboard
+**Framework Card Cleanup**
+- Moved GitHub stars to top-right with small GitHub icon
+- Removed bookmark button from cards (now only in modal)
+- Standardized 2-line description with ellipsis
+
+**Description Sanitization**
+- Added `cleanDescription()` utility to strip XML tags, examples, and normalize whitespace
+- Applied across all cards and modals for clean display
+
+**Modal Overflow Fixes**
+- Fixed text overflow issues in framework modal
+- Added proper `min-w-0`, `break-words`, and `overflow-hidden` constraints
 
 ---
 
-## What's Next
+**Previous: UX Overhaul** - Complete ✅
 
+Transformed Agent Augments from a "developer tool catalog" into a "curated marketplace."
+
+**All Phases Complete:**
+- Phase 1: Hero Spotlight ✅
+- Phase 2: Install Command UX ✅
+- Phase 3: Category Sections ✅
+- Phase 4: Value Proposition ✅
+- Phase 5: Search Unification ✅
+- Phase 6: Card Density ✅
+- Phase 7: Polish & Microinteractions ✅
+
+---
+
+## Backlog
+
+**Augs CLI - Connect & Sync** (Paused)
+- See `.wip/CLI-PLAN.md` for details
+- CLI tool (`npx augs`) that connects local Claude Code setups to the web UI
+
+- Cursor Rules indexing from cursor.directory and GitHub
+- Skills Tab (cross-agent skills navigation) - `.wip/TASKS.md`
+- User Preferences (remember preferred agents)
 - User profiles / public bookmark lists
 - Plugin install analytics dashboard
-- Add support for Cursor, Windsurf, and Codex plugins
-- VS Code extension for browsing/installing augments
 
 ---
 
 ## Completed Milestones
+
+### UX Overhaul - Phases 1-3 (Current)
+
+Major UX transformation based on comprehensive audit. Goal: shift from "catalog" to "curated marketplace."
+
+**Phase 1: Hero Spotlight**
+- Replaced old "Featured" section with dramatic 2-column Spotlight
+- Primary + Secondary plugin cards with equal sizing
+- Full descriptions, prominent CTAs ("Copy" / "Details")
+- Gradient borders, glow effects on hover
+- Publisher branding support for official sources
+
+**Phase 2: Install Command UX**
+- Install commands now hidden by default on plugin cards
+- Slide-up animation reveals install command on hover
+- Reduced visual noise in the browsing experience
+- Cards focus on what plugins DO, not how to install
+
+**Phase 3: Category Sections**
+- Browse by category as default view (curated feel)
+- Toggle between "Categories" and "All" modes
+- Each category shows up to 6 plugins in horizontal scroll
+- Category sections sorted by total plugin count
+- "View all" links filter to that category
+- Smart category ordering (most popular first)
+
+**New Files:**
+- `src/components/home/hero-spotlight.tsx` - Spotlight section component
+- `src/components/home/category-section.tsx` - Category browsing components
+- `src/lib/publishers.ts` - Publisher config & category display names
+- `src/app/api/plugins/categories/route.ts` - API for category-grouped plugins
+- `src/hooks/usePluginsByCategory.ts` - Hook for category browsing data
+
+**Modified Files:**
+- `src/components/plugin/plugin-card.tsx` - Hover-to-reveal install
+- `src/components/home/home-content.tsx` - Integrated Spotlight & Category Browse
+
+---
 
 ### UX Redesign - Phase 5: Multi-Agent Architecture Prep
 
@@ -197,7 +263,8 @@ Added development frameworks as a new "Frameworks" tab.
 ```
 src/
 ├── app/
-│   ├── page.tsx              # Main page
+│   ├── page.tsx              # Home page (curated landing)
+│   ├── browse/page.tsx       # Browse page (full catalog with filters)
 │   ├── globals.css           # Dark theme (oklch)
 │   └── api/                  # health, plugins, bookmarks, framework-bookmarks, analytics
 ├── components/
@@ -206,13 +273,15 @@ src/
 │   ├── plugin/               # PluginCard, PluginGrid, PluginModal, plugin-utils
 │   ├── framework/            # FrameworkCard, FrameworkGrid, FrameworkModal, framework-utils
 │   ├── filters/              # SearchInput, FilterPanel, ViewToggle, TypeQuickFilter
+│   ├── browse/               # BrowseContent (full catalog view)
 │   ├── auth/                 # AuthButton
-│   └── home/                 # HomeContent
+│   └── home/                 # HomeContent, HeroSpotlight, CategorySection
 ├── hooks/                    # usePlugins, useMarketplaces, useBookmarks, useFrameworkBookmarks, useUrlFilters, useFrameworks, usePluginFrameworks
 ├── lib/
 │   ├── supabase/             # client, server, admin
 │   ├── github/api.ts
 │   ├── agents.ts             # AI coding agent configuration
+│   ├── publishers.ts         # Publisher branding & category display names
 │   └── sync/
 │       ├── marketplace-sync.ts
 │       └── framework-sync.ts
