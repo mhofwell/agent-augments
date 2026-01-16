@@ -1,5 +1,5 @@
-import { HomeContent } from "@/components/home";
+import { FrameworksHome } from "@/components/home";
 
 export default function Home() {
-  return <HomeContent />;
+  return <FrameworksHome />;
 }

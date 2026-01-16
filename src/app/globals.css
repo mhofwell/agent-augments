@@ -133,3 +133,23 @@
     font-family: var(--font-sans), system-ui, sans-serif;
   }
 }
+
+/* Border shine animation for featured card */
+@keyframes border-shine {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Border beam animation - rotating gradient */
+@keyframes border-beam {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
