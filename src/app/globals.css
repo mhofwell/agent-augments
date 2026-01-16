@@ -153,3 +153,42 @@
     transform: rotate(360deg);
   }
 }
+
+/* Glow pulse animation for featured card */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.15), 0 0 40px rgba(34, 211, 238, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(34, 211, 238, 0.25), 0 0 60px rgba(34, 211, 238, 0.15);
+  }
+}
+
+.featured-glow {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* Shimmer animation for featured badge */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    #22d3ee 0%,
+    #67e8f9 25%,
+    #22d3ee 50%,
+    #67e8f9 75%,
+    #22d3ee 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}

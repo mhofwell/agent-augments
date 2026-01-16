@@ -6,22 +6,25 @@ import { toast } from "sonner";
 import { useFrameworks } from "@/hooks";
 import type { Framework } from "@/types/database";
 
-// Primary button - dark filled
+// Primary button - dark filled with cyan accent
 function PrimaryButton({
   children,
   onClick,
   icon: Icon,
 }: {
   children: React.ReactNode;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
   icon?: React.ElementType;
 }) {
   return (
     <button
-      onClick={onClick}
-      className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-full text-sm text-white transition-colors cursor-pointer"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.(e);
+      }}
+      className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-cyan-500/50 rounded-full text-sm text-white transition-all cursor-pointer hover:shadow-md hover:shadow-cyan-500/10"
     >
-      {Icon && <Icon size={16} className="text-zinc-400" />}
+      {Icon && <Icon size={16} className="text-cyan-400" />}
       {children}
     </button>
   );
@@ -91,15 +94,15 @@ function FrameworkCard({ framework }: { framework: Framework }) {
   };
 
   return (
-    <div className="group border border-zinc-800 rounded-xl p-6 hover:border-zinc-700 transition-colors">
+    <div className="group border border-zinc-800 rounded-xl p-6 hover:border-zinc-600 hover:bg-zinc-900/50 transition-all">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-1">
         <h3 className="text-lg font-semibold text-white">
           {framework.name}
         </h3>
         {framework.stars && framework.stars > 0 && (
-          <div className="flex items-center gap-1 text-zinc-500 text-sm shrink-0">
-            <Star size={14} className="fill-zinc-500" />
+          <div className="flex items-center gap-1 text-amber-400/70 text-sm shrink-0">
+            <Star size={14} className="fill-amber-400/70" />
             <span>{framework.stars >= 1000 ? `${(framework.stars / 1000).toFixed(1)}k` : framework.stars}</span>
           </div>
         )}
@@ -125,10 +128,10 @@ function FrameworkCard({ framework }: { framework: Framework }) {
       <div className="flex items-center gap-3 mb-5">
         <span className="text-xs text-zinc-500">Works with:</span>
         <div className="flex items-center gap-2">
-          <img src="/claude-star-dark.svg" alt="Claude" className="h-4 w-4 opacity-70" />
-          <img src="/openai-dark.svg" alt="OpenAI" className="h-4 w-4 opacity-70" />
-          <img src="/cursor-dark.svg" alt="Cursor" className="h-4 w-4 opacity-70" />
-          <img src="/windsurf-dark.svg" alt="Windsurf" className="h-4 w-4 opacity-70" />
+          <img src="/claude-star-dark.svg" alt="Claude" className="h-4 w-4 opacity-90 hover:opacity-100 transition-opacity" />
+          <img src="/openai-dark.svg" alt="OpenAI" className="h-4 w-4 opacity-90 hover:opacity-100 transition-opacity" />
+          <img src="/cursor-dark.svg" alt="Cursor" className="h-4 w-4 opacity-90 hover:opacity-100 transition-opacity" />
+          <img src="/windsurf-dark.svg" alt="Windsurf" className="h-4 w-4 opacity-90 hover:opacity-100 transition-opacity" />
         </div>
       </div>
 
@@ -179,16 +182,20 @@ export function FrameworksHome() {
   });
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      {/* Background gradient orb */}
+      <div className="absolute top-0 right-0 w-[800px] h-[600px] bg-gradient-to-bl from-cyan-500/5 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute top-1/2 left-0 w-[600px] h-[600px] bg-gradient-to-r from-violet-500/5 via-transparent to-transparent pointer-events-none" />
+
       {/* Header */}
-      <header className="border-b border-zinc-800">
+      <header className="border-b border-zinc-800 relative z-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <h1 className="text-xl font-bold">Agentic Frameworks</h1>
             <nav className="hidden md:flex items-center gap-6 text-sm text-zinc-400">
-              <a href="#" className="hover:text-white transition-colors">Frameworks</a>
-              <a href="#" className="hover:text-white transition-colors">Compare</a>
-              <a href="#" className="hover:text-white transition-colors">Submit</a>
+              <a href="#" className="hover:text-cyan-400 transition-colors">Frameworks</a>
+              <a href="#" className="hover:text-cyan-400 transition-colors">Compare</a>
+              <a href="#" className="hover:text-cyan-400 transition-colors">Submit</a>
             </nav>
           </div>
           <a
@@ -200,7 +207,7 @@ export function FrameworksHome() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6">
+      <main className="max-w-6xl mx-auto px-6 relative z-10">
         {/* Hero - two column layout */}
         <section className="py-16 md:py-24 grid md:grid-cols-2 gap-12 items-start">
           {/* Left column - Title and description */}
@@ -216,24 +223,24 @@ export function FrameworksHome() {
 
             {/* Agent logos */}
             <div className="flex flex-wrap items-center gap-6">
-              <img src="/claude-full-dark.svg" alt="Claude" className="h-6 opacity-80 hover:opacity-100 transition-opacity" />
-              <img src="/openai-full-dark.svg" alt="OpenAI" className="h-6 opacity-80 hover:opacity-100 transition-opacity" />
-              <img src="/cursor-full-dark.svg" alt="Cursor" className="h-6 opacity-80 hover:opacity-100 transition-opacity" />
-              <img src="/windsurf-full-dark.svg" alt="Windsurf" className="h-6 opacity-80 hover:opacity-100 transition-opacity" />
+              <img src="/claude-full-dark.svg" alt="Claude" className="h-6 opacity-90 hover:opacity-100 hover:drop-shadow-[0_0_8px_rgba(255,140,50,0.4)] transition-all" />
+              <img src="/openai-full-dark.svg" alt="OpenAI" className="h-6 opacity-90 hover:opacity-100 hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] transition-all" />
+              <img src="/cursor-full-dark.svg" alt="Cursor" className="h-6 opacity-90 hover:opacity-100 hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.4)] transition-all" />
+              <img src="/windsurf-full-dark.svg" alt="Windsurf" className="h-6 opacity-90 hover:opacity-100 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-all" />
             </div>
           </div>
 
           {/* Right column - Featured framework */}
-          <div className="group/featured relative rounded-xl border border-zinc-700 hover:border-white/80 transition-colors duration-300">
-            <div className="rounded-xl p-6 h-full">
+          <div className="group/featured relative rounded-xl border border-cyan-500/30 hover:border-cyan-400/60 transition-all duration-300 featured-glow">
+            <div className="rounded-xl p-6 h-full bg-gradient-to-br from-cyan-950/20 via-zinc-900/50 to-transparent">
             {/* Content wrapper */}
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-xs text-white">
-                <Sparkles size={14} />
-                <span className="uppercase tracking-wide font-medium">Featured</span>
+              <div className="flex items-center gap-2 text-xs">
+                <Sparkles size={14} className="text-cyan-400 fill-cyan-400/30" />
+                <span className="uppercase tracking-wide font-medium shimmer-text">Featured</span>
               </div>
-              <div className="flex items-center gap-1 text-zinc-500 text-sm">
-                <Star size={14} className="fill-zinc-500" />
+              <div className="flex items-center gap-1 text-amber-400/80 text-sm">
+                <Star size={14} className="fill-amber-400/80" />
                 <span>1.2k</span>
               </div>
             </div>
@@ -249,12 +256,12 @@ export function FrameworksHome() {
               Includes slash commands for planning, building, and reviewing.
             </p>
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-xs text-zinc-500">Works with:</span>
+              <span className="text-xs text-zinc-400">Works with:</span>
               <div className="flex items-center gap-2">
-                <img src="/claude-star-dark.svg" alt="Claude" className="h-4 w-4 opacity-70" />
-                <img src="/openai-dark.svg" alt="OpenAI" className="h-4 w-4 opacity-70" />
-                <img src="/cursor-dark.svg" alt="Cursor" className="h-4 w-4 opacity-70" />
-                <img src="/windsurf-dark.svg" alt="Windsurf" className="h-4 w-4 opacity-70" />
+                <img src="/claude-star-dark.svg" alt="Claude" className="h-4 w-4 opacity-95" />
+                <img src="/openai-dark.svg" alt="OpenAI" className="h-4 w-4 opacity-95" />
+                <img src="/cursor-dark.svg" alt="Cursor" className="h-4 w-4 opacity-95" />
+                <img src="/windsurf-dark.svg" alt="Windsurf" className="h-4 w-4 opacity-95" />
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -278,7 +285,7 @@ export function FrameworksHome() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search frameworks..."
-              className="w-full pl-10 pr-4 py-2.5 bg-transparent border border-zinc-800 rounded-lg text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
+              className="w-full pl-10 pr-4 py-2.5 bg-transparent border border-zinc-800 rounded-lg text-white placeholder:text-zinc-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
             />
           </div>
           <div className="text-sm text-zinc-400">
@@ -303,7 +310,7 @@ export function FrameworksHome() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-800 py-8">
+      <footer className="border-t border-zinc-800 py-8 relative z-10">
         <div className="max-w-6xl mx-auto px-6 text-center text-sm text-zinc-500">
           Curated with care. Submit a framework on GitHub.
         </div>
