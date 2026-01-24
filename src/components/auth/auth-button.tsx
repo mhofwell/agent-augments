@@ -1,6 +1,6 @@
 "use client";
 
-import { Github, LogOut, User as UserIcon } from "lucide-react";
+import { Github, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -14,7 +14,19 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 
-export function AuthButton() {
+function getInitials(name: string | undefined, email: string | undefined): string {
+  if (name) {
+    return name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  }
+  return email?.[0]?.toUpperCase() || "U";
+}
+
+export function AuthButton(): React.ReactNode {
   const { user, loading, isAuthenticated, signInWithGithub, signOut } = useAuth();
 
   if (loading) {
@@ -33,14 +45,7 @@ export function AuthButton() {
   const avatarUrl = user?.user_metadata?.avatar_url;
   const name = user?.user_metadata?.full_name || user?.user_metadata?.name;
   const email = user?.email;
-  const initials = name
-    ? name
-        .split(" ")
-        .map((n: string) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    : email?.[0]?.toUpperCase() || "U";
+  const initials = getInitials(name, email);
 
   return (
     <DropdownMenu>

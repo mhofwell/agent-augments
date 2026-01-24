@@ -20,6 +20,13 @@ const framework = {
   color: "#10b981", // emerald
   is_active: true,
   stars: 4800,
+  // Agent compatibility detection flags
+  subagents_count: 0,
+  has_claude_md: true,
+  has_agents_md: false,
+  has_cursorrules: false,
+  has_windsurfrules: false,
+  is_claude_plugin: true, // /plugin syntax = Claude Code only
 };
 
 async function main() {

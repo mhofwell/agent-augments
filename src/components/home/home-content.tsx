@@ -2,11 +2,14 @@
 
 import { useState, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { Search, Shield, Layers, ChevronRight, Sparkles } from "lucide-react";
+import { Search, Shield, Layers, ChevronRight, Sparkles, Zap } from "lucide-react";
 import { AmbientBackground, SiteHeader, InstallFooter } from "@/components/layout";
 import { PluginCard, PluginModal } from "@/components/plugin";
 import { FrameworkCard, FrameworkModal } from "@/components/framework";
+import { PublisherCard } from "@/components/skills";
+import { AgentCarousel } from "@/components/skills/agent-carousel";
 import { usePlugins, useMarketplaces, useBookmarks, useFrameworkBookmarks, useFrameworks } from "@/hooks";
+import { useSkillPublishers } from "@/hooks/useSkillPublishers";
 import type { PluginWithMarketplace, Framework } from "@/types/database";
 
 // Wrap with Suspense for useSearchParams
@@ -33,13 +36,14 @@ function HomeContentInner() {
   const [selectedFramework, setSelectedFramework] = useState<Framework | null>(null);
 
   // Data hooks
-  const { marketplaces, officialIds } = useMarketplaces();
+  const { officialIds } = useMarketplaces();
   const { frameworks, isLoading: frameworksLoading } = useFrameworks();
+  const { publishers, isLoading: publishersLoading } = useSkillPublishers();
   const { bookmarkedIds, toggleBookmark } = useBookmarks();
   const { bookmarkedIds: frameworkBookmarkedIds, toggleBookmark: toggleFrameworkBookmark } = useFrameworkBookmarks();
 
   // Fetch plugins - higher limit for better coverage
-  const { plugins, isLoading, pagination } = usePlugins({
+  const { plugins, isLoading } = usePlugins({
     search: search || undefined,
     sort: "popular",
     limit: 100, // Fetch more for better section coverage
@@ -58,19 +62,10 @@ function HomeContentInner() {
       .sort((a, b) => (b.install_count || 0) - (a.install_count || 0));
   }, [plugins, officialIds]);
 
-  // Search results - show when searching
-  const searchResults = useMemo(() => {
-    if (!search) return [];
-    return plugins;
-  }, [search, plugins]);
-
   // Get the selected plugin's official status
   const isSelectedPluginOfficial = selectedPlugin
     ? officialIds.has(selectedPlugin.marketplace_id)
     : false;
-
-  // Count totals - use pagination.total for accurate count
-  const totalAugments = pagination.total || plugins.length;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -82,7 +77,7 @@ function HomeContentInner() {
         {/* Hero Section */}
         <section className="py-16 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
-            Augments for your coding agent
+            Equip your agent with superpowers
           </h1>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
             Find curated frameworks, official plugins, and community contributions for Claude Code.
@@ -101,15 +96,18 @@ function HomeContentInner() {
           </div>
         </section>
 
+        {/* Agent carousel */}
+        <AgentCarousel />
+
         {/* Search Results */}
         {search && (
           <section className="pb-12">
             <h2 className="text-sm font-medium text-muted-foreground mb-4">
-              {searchResults.length} results for "{search}"
+              {plugins.length} results for &ldquo;{search}&rdquo;
             </h2>
-            {searchResults.length > 0 ? (
+            {plugins.length > 0 ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {searchResults.slice(0, 12).map((plugin) => (
+                {plugins.slice(0, 12).map((plugin) => (
                   <PluginCard
                     key={plugin.id}
                     plugin={plugin}
@@ -135,8 +133,8 @@ function HomeContentInner() {
             <section className="pb-12">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Layers size={20} className="text-primary" />
+                  <div className="p-2 rounded-lg bg-lime-500/10">
+                    <Layers size={20} className="text-lime-500" />
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold">Frameworks</h2>
@@ -171,6 +169,48 @@ function HomeContentInner() {
               )}
             </section>
 
+            {/* Official Skills Section */}
+            {publishers.length > 0 && (
+              <section className="pb-12">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-cyan-500/10">
+                      <Zap size={20} className="text-cyan-500" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold">Official Skills</h2>
+                      <p className="text-sm text-muted-foreground">From verified publishers like Vercel and Railway</p>
+                    </div>
+                  </div>
+                  <Link
+                    href="/skills"
+                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                  >
+                    View all
+                    <ChevronRight size={16} />
+                  </Link>
+                </div>
+
+                {publishersLoading ? (
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-48 rounded-xl bg-secondary/50 animate-pulse" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {publishers.slice(0, 3).map((publisher) => (
+                      <PublisherCard
+                        key={publisher.id}
+                        publisher={publisher}
+                        onClick={() => window.location.href = `/skills`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
             {/* Official Section */}
             <section className="pb-12">
               <div className="flex items-center justify-between mb-6">
@@ -180,7 +220,7 @@ function HomeContentInner() {
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold">Official</h2>
-                    <p className="text-sm text-muted-foreground">From Anthropic's verified marketplace</p>
+                    <p className="text-sm text-muted-foreground">From Anthropic&apos;s verified marketplace</p>
                   </div>
                 </div>
               </div>
@@ -206,15 +246,6 @@ function HomeContentInner() {
                 </div>
               )}
 
-              {officialPlugins.length > 6 && (
-                <Link
-                  href="/browse"
-                  className="mt-4 text-sm text-primary hover:underline flex items-center gap-1 mx-auto"
-                >
-                  View all {officialPlugins.length} official augments
-                  <ChevronRight size={16} />
-                </Link>
-              )}
             </section>
 
             {/* Community Section */}
@@ -229,15 +260,6 @@ function HomeContentInner() {
                     <p className="text-sm text-muted-foreground">From the community marketplaces</p>
                   </div>
                 </div>
-                {communityPlugins.length > 6 && (
-                  <Link
-                    href="/browse"
-                    className="text-sm text-primary hover:underline flex items-center gap-1"
-                  >
-                    View all {communityPlugins.length}
-                    <ChevronRight size={16} />
-                  </Link>
-                )}
               </div>
 
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">

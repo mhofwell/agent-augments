@@ -4,6 +4,7 @@ import { Bookmark, BookmarkCheck, Copy, Check, Terminal, Star } from "lucide-rea
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { getPluginTypeConfig, formatNumber, getInstallCommand, cleanDescription } from "./plugin-utils";
 import { getCategoryDisplayName } from "@/lib/publishers";
 import { CompositionBadges } from "./composition-badges";
@@ -72,8 +73,8 @@ export function PluginCard({
           </span>
           {/* Install count as quality signal */}
           {(plugin.install_count || 0) > 0 && (
-            <span className="flex items-center gap-1 text-xs text-amber-400">
-              <Star size={12} className="fill-amber-400" />
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Star size={12} className="text-amber-400 fill-amber-400" />
               {formatNumber(plugin.install_count)}
             </span>
           )}
@@ -164,16 +165,18 @@ export function PluginCard({
           <code className="flex-1 px-4 py-3 font-mono text-xs text-primary truncate">
             {installCommand}
           </code>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-auto w-auto p-3 rounded-none border-l border-border flex-shrink-0"
             onClick={handleCopy}
-            className="flex-shrink-0 p-3 hover:bg-secondary/50 transition-colors border-l border-border"
           >
             {copied ? (
               <Check size={14} className="text-emerald-400" />
             ) : (
-              <Copy size={14} className="text-muted-foreground hover:text-foreground" />
+              <Copy size={14} />
             )}
-          </button>
+          </Button>
         </div>
       </div>
 

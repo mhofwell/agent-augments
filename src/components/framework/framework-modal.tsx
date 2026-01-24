@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Copy, Check, Github, ExternalLink, Terminal, Star, Bookmark, HelpCircle, ChevronDown } from "lucide-react";
+import { Copy, Check, Github, ExternalLink, Terminal, Star, Bookmark } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -12,16 +12,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { getToolStyle, formatStars } from "./framework-utils";
+import {
+  AgentCompatibilityRow,
+  MethodologyCard,
+  AutonomyCard,
+  UseCasesBadges,
+  FeaturesList,
+} from "./shared";
 import { usePluginFrameworks } from "@/hooks/usePluginFrameworks";
 import { getPluginTypeConfig, formatNumber, cleanDescription } from "@/components/plugin/plugin-utils";
-import { getCompatibleAgents } from "@/lib/agents";
 import type { Framework, PluginWithMarketplace, PluginType } from "@/types/database";
 
 interface FrameworkModalProps {
@@ -42,7 +43,6 @@ export function FrameworkModal({
   onPluginClick,
 }: FrameworkModalProps) {
   const [copied, setCopied] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
   const [plugins, setPlugins] = useState<PluginWithMarketplace[]>([]);
   const { getPluginsForFramework } = usePluginFrameworks();
 
@@ -56,7 +56,6 @@ export function FrameworkModal({
   if (!framework) return null;
 
   const toolStyle = getToolStyle(framework.install_tool);
-  const compatibleAgents = getCompatibleAgents(framework.id);
 
   const copyCommand = async () => {
     try {
@@ -76,56 +75,65 @@ export function FrameworkModal({
       <DialogContent className="sm:max-w-2xl bg-card border-border p-0 gap-0 max-h-[90vh] overflow-y-auto overflow-x-hidden">
         {/* Header */}
         <DialogHeader className="p-6 pb-4">
-          <div className="flex items-start gap-4">
-            <div
-              className="w-14 h-14 rounded-xl flex items-center justify-center border border-border"
-              style={{ backgroundColor: `${framework.color}20`, borderColor: `${framework.color}50` }}
-            >
-              <Terminal size={28} style={{ color: framework.color || undefined }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <DialogTitle className="text-2xl font-bold break-words">
-                  {framework.name}
-                </DialogTitle>
-                {framework.install_tool && (
-                  <Badge
-                    variant="outline"
-                    className={cn("text-xs uppercase flex-shrink-0", toolStyle.bg, toolStyle.text, toolStyle.border)}
-                  >
-                    {framework.install_tool}
-                  </Badge>
-                )}
-                {framework.stars && framework.stars > 0 && (
-                  <span className="flex items-center gap-1 text-sm text-muted-foreground flex-shrink-0">
-                    <Star size={14} className="text-amber-400 fill-amber-400" />
-                    {formatStars(framework.stars)}
-                  </span>
-                )}
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div
+                className="w-14 h-14 rounded-xl flex items-center justify-center border border-border flex-shrink-0"
+                style={{ backgroundColor: `${framework.color}20`, borderColor: `${framework.color}50` }}
+              >
+                <Terminal size={28} style={{ color: framework.color || undefined }} />
               </div>
-              <div className="flex items-center gap-3 mt-1">
-                <p className="text-muted-foreground text-sm">
-                  Development Framework
-                </p>
-                {onToggleBookmark && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onToggleBookmark}
-                    className="h-7 px-2"
-                  >
-                    <Bookmark
-                      size={14}
-                      className={cn(
-                        "mr-1",
-                        isBookmarked ? "fill-primary text-primary" : "text-muted-foreground"
-                      )}
-                    />
-                    {isBookmarked ? "Saved" : "Save"}
-                  </Button>
-                )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <DialogTitle className="text-2xl font-bold break-words">
+                    {framework.name}
+                  </DialogTitle>
+                  {framework.install_tool && (
+                    <Badge
+                      variant="outline"
+                      className={cn("text-xs uppercase flex-shrink-0", toolStyle.bg, toolStyle.text, toolStyle.border)}
+                    >
+                      {framework.install_tool}
+                    </Badge>
+                  )}
+                  {framework.stars && framework.stars > 0 && (
+                    <span className="flex items-center gap-1 text-sm text-muted-foreground flex-shrink-0">
+                      <Star size={14} className="text-amber-400 fill-amber-400" />
+                      {formatStars(framework.stars)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 mt-1">
+                  <p className="text-muted-foreground text-sm">
+                    Development Framework
+                  </p>
+                  {onToggleBookmark && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={onToggleBookmark}
+                      className="h-7 px-2"
+                    >
+                      <Bookmark
+                        size={14}
+                        className={cn(
+                          "mr-1",
+                          isBookmarked ? "fill-primary text-primary" : "text-muted-foreground"
+                        )}
+                      />
+                      {isBookmarked ? "Saved" : "Save"}
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
+
+            {/* Agent compatibility icons */}
+            <AgentCompatibilityRow
+              item={framework}
+              size="md"
+              className="flex-shrink-0"
+            />
           </div>
         </DialogHeader>
 
@@ -138,53 +146,36 @@ export function FrameworkModal({
             {framework.description || "No description available"}
           </p>
 
-          {/* Works with agents */}
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              Works With
-            </h3>
+          {/* Highlights - Methodology & Autonomy */}
+          {(framework.methodology || framework.autonomy_level) && (
             <div className="flex flex-wrap gap-2">
-              {compatibleAgents.map((agent) => (
-                <Badge
-                  key={agent.id}
-                  variant="outline"
-                  className="text-sm px-3 py-1"
-                  style={{
-                    borderColor: `${agent.color}50`,
-                    backgroundColor: `${agent.color}10`,
-                  }}
-                >
-                  <span
-                    className="inline-block w-2 h-2 rounded-full mr-2"
-                    style={{ backgroundColor: agent.color }}
-                  />
-                  {agent.name}
-                </Badge>
-              ))}
+              <MethodologyCard methodology={framework.methodology} variant="compact" />
+              <AutonomyCard autonomyLevel={framework.autonomy_level} variant="compact" />
             </div>
-          </div>
+          )}
 
-          {/* Prerequisites */}
-          {framework.prerequisites && framework.prerequisites.length > 0 && (
+          {/* Best For - Use Cases */}
+          {framework.use_cases && framework.use_cases.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                Prerequisites
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                Best For
               </h3>
-              <div className="flex flex-wrap gap-2">
-                {framework.prerequisites.map((prereq) => (
-                  <Badge key={prereq} variant="outline" className="text-sm">
-                    {prereq}
-                  </Badge>
-                ))}
-              </div>
+              <UseCasesBadges useCases={framework.use_cases} variant="compact" maxItems={5} />
+            </div>
+          )}
+
+          {/* Features */}
+          {framework.features && framework.features.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                Features
+              </h3>
+              <FeaturesList features={framework.features} variant="compact" maxItems={4} />
             </div>
           )}
 
           {/* Install Command */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              Installation
-            </h3>
+          <div className="space-y-3">
             <div className="flex items-center gap-2 min-w-0">
               <code
                 className="flex-1 min-w-0 px-4 py-3 bg-background rounded-lg font-mono text-sm border border-border overflow-x-auto whitespace-nowrap"
@@ -205,42 +196,15 @@ export function FrameworkModal({
                 )}
               </Button>
             </div>
-
-            {/* First time? Help section */}
-            <Collapsible open={helpOpen} onOpenChange={setHelpOpen}>
-              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                <HelpCircle size={14} />
-                <span>First time using frameworks?</span>
-                <ChevronDown
-                  size={14}
-                  className={cn("transition-transform", helpOpen && "rotate-180")}
-                />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-3">
-                <div className="bg-background rounded-lg border border-border p-4 space-y-3 text-sm text-muted-foreground">
-                  <ol className="list-decimal list-inside space-y-2">
-                    <li>Open your terminal in your project directory</li>
-                    <li>Copy the install command above</li>
-                    <li>Paste and run the command</li>
-                    <li>Follow any setup prompts from the framework</li>
-                  </ol>
-                  <Separator />
-                  <p className="text-xs">
-                    Frameworks are development methodologies that work with any AI coding agent.
-                    They provide structured workflows and best practices for your projects.
-                  </p>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3">
             {framework.homepage && (
               <Button variant="secondary" className="flex-1" asChild>
                 <a href={framework.homepage} target="_blank" rel="noopener noreferrer">
                   <ExternalLink size={18} className="mr-2" />
-                  Documentation
+                  Website
                 </a>
               </Button>
             )}
@@ -248,7 +212,7 @@ export function FrameworkModal({
               <Button variant="secondary" className="flex-1" asChild>
                 <a href={framework.github_url} target="_blank" rel="noopener noreferrer">
                   <Github size={18} className="mr-2" />
-                  Repository
+                  GitHub
                 </a>
               </Button>
             )}

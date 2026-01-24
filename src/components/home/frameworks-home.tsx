@@ -1,295 +1,153 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Star, Check, Github, Terminal, Sparkles, BadgeCheck } from "lucide-react";
-import { toast } from "sonner";
+import { Search, ArrowUpDown, ChevronDown, X } from "lucide-react";
+import { SiteHeader } from "@/components/layout";
+import { AgentCarousel } from "@/components/skills/agent-carousel";
+import { FrameworkCard } from "@/components/framework/framework-card";
 import { useFrameworks } from "@/hooks";
-import type { Framework } from "@/types/database";
-
-// Primary button - dark filled with cyan accent
-function PrimaryButton({
-  children,
-  onClick,
-  icon: Icon,
-}: {
-  children: React.ReactNode;
-  onClick?: (e: React.MouseEvent) => void;
-  icon?: React.ElementType;
-}) {
-  return (
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick?.(e);
-      }}
-      className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-cyan-500/50 rounded-full text-sm text-white transition-all cursor-pointer hover:shadow-md hover:shadow-cyan-500/10"
-    >
-      {Icon && <Icon size={16} className="text-cyan-400" />}
-      {children}
-    </button>
-  );
-}
-
-// Secondary button - subtle outline
-function SecondaryButton({
-  children,
-  href,
-  icon: Icon,
-}: {
-  children: React.ReactNode;
-  href: string;
-  icon?: React.ElementType;
-}) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 px-4 py-2 bg-transparent hover:bg-zinc-800 border border-zinc-700 rounded-full text-sm text-zinc-400 hover:text-white transition-colors cursor-pointer"
-    >
-      {Icon && <Icon size={16} />}
-      {children}
-    </a>
-  );
-}
-
-// Verified organizations
-const VERIFIED_ORGS = new Set([
-  "github",
-  "anthropics",
-  "anthropic",
-  "EveryInc",
-  "openai",
-]);
-
-// Check if an author is verified (case-insensitive)
-function isVerified(author: string | null): boolean {
-  if (!author) return false;
-  return VERIFIED_ORGS.has(author) || VERIFIED_ORGS.has(author.toLowerCase());
-}
-
-// Extract author/org from GitHub URL
-function extractAuthor(githubUrl: string | null): string | null {
-  if (!githubUrl) return null;
-  const match = githubUrl.match(/github\.com\/([^\/]+)/);
-  return match ? match[1] : null;
-}
-
-// Minimal framework card with Every.to style buttons
-function FrameworkCard({ framework }: { framework: Framework }) {
-  const [copied, setCopied] = useState(false);
-  const author = extractAuthor(framework.github_url);
-
-  const copyCommand = async () => {
-    if (framework.install_command) {
-      try {
-        await navigator.clipboard.writeText(framework.install_command);
-        setCopied(true);
-        toast.success("Install command copied to clipboard");
-        setTimeout(() => setCopied(false), 2000);
-      } catch {
-        toast.error("Failed to copy to clipboard");
-      }
-    }
-  };
-
-  return (
-    <div className="group border border-zinc-800 rounded-xl p-6 hover:border-zinc-600 hover:bg-zinc-900/50 transition-all">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-1">
-        <h3 className="text-lg font-semibold text-white">
-          {framework.name}
-        </h3>
-        {framework.stars && framework.stars > 0 && (
-          <div className="flex items-center gap-1 text-amber-400/70 text-sm shrink-0">
-            <Star size={14} className="fill-amber-400/70" />
-            <span>{framework.stars >= 1000 ? `${(framework.stars / 1000).toFixed(1)}k` : framework.stars}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Author */}
-      {author && (
-        <div className="flex items-center gap-1 text-xs text-zinc-500 mb-3">
-          <span>by</span>
-          <span className="text-zinc-400">{author}</span>
-          {isVerified(author) && (
-            <BadgeCheck size={14} className="text-yellow-500 fill-yellow-500/20" />
-          )}
-        </div>
-      )}
-
-      {/* Description */}
-      <p className="text-zinc-400 text-sm leading-relaxed mb-4 line-clamp-2">
-        {framework.description}
-      </p>
-
-      {/* Agent compatibility */}
-      <div className="flex items-center gap-3 mb-5">
-        <span className="text-xs text-zinc-500">Works with:</span>
-        <div className="flex items-center gap-2">
-          <img src="/claude-star-dark.svg" alt="Claude" className="h-4 w-4 opacity-90 hover:opacity-100 transition-opacity" />
-          <img src="/openai-dark.svg" alt="OpenAI" className="h-4 w-4 opacity-90 hover:opacity-100 transition-opacity" />
-          <img src="/cursor-dark.svg" alt="Cursor" className="h-4 w-4 opacity-90 hover:opacity-100 transition-opacity" />
-          <img src="/windsurf-dark.svg" alt="Windsurf" className="h-4 w-4 opacity-90 hover:opacity-100 transition-opacity" />
-        </div>
-      </div>
-
-      {/* Action buttons - Every.to style */}
-      <div className="flex flex-wrap items-center gap-2">
-        {framework.install_command && (
-          <PrimaryButton onClick={copyCommand} icon={copied ? Check : Terminal}>
-            {copied ? "Copied" : "Install"}
-          </PrimaryButton>
-        )}
-        {framework.github_url && (
-          <SecondaryButton href={framework.github_url} icon={Github}>
-            GitHub
-          </SecondaryButton>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Spec Kit install command
-const SPEC_KIT_INSTALL = "npx spec-kit init";
 
 export function FrameworksHome() {
   const [search, setSearch] = useState("");
-  const [featuredCopied, setFeaturedCopied] = useState(false);
   const { frameworks, isLoading } = useFrameworks();
 
-  const copyFeaturedCommand = async () => {
-    try {
-      await navigator.clipboard.writeText(SPEC_KIT_INSTALL);
-      setFeaturedCopied(true);
-      toast.success("Install command copied to clipboard");
-      setTimeout(() => setFeaturedCopied(false), 2000);
-    } catch {
-      toast.error("Failed to copy to clipboard");
-    }
-  };
+  // Sort state
+  type SortOption = "stars" | "name" | "updated";
+  const [sortBy, setSortBy] = useState<SortOption>("stars");
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
-  // Filter frameworks by search
-  const filteredFrameworks = frameworks.filter((f) => {
-    if (!search) return true;
-    const searchLower = search.toLowerCase();
-    return (
-      f.name.toLowerCase().includes(searchLower) ||
-      f.description?.toLowerCase().includes(searchLower)
-    );
-  });
+  const sortOptions: { value: SortOption; label: string }[] = [
+    { value: "stars", label: "Most Stars" },
+    { value: "name", label: "Name (A-Z)" },
+    { value: "updated", label: "Recently Updated" },
+  ];
+
+  // Featured framework is the one with lowest sort_order (or first by stars)
+  const featuredFramework = frameworks.length > 0
+    ? [...frameworks].sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999))[0]
+    : null;
+
+  // Filter and sort frameworks
+  const filteredFrameworks = frameworks
+    .filter((f) => {
+      if (!search) return true;
+      const searchLower = search.toLowerCase();
+      return (
+        f.name.toLowerCase().includes(searchLower) ||
+        f.description?.toLowerCase().includes(searchLower)
+      );
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "stars":
+          return (b.stars ?? 0) - (a.stars ?? 0);
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "updated":
+          return new Date(b.updated_at ?? 0).getTime() - new Date(a.updated_at ?? 0).getTime();
+        default:
+          return 0;
+      }
+    });
 
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
       {/* Background gradient orb */}
-      <div className="absolute top-0 right-0 w-[800px] h-[600px] bg-gradient-to-bl from-cyan-500/5 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute top-0 right-0 w-[800px] h-[600px] bg-gradient-to-bl from-lime-500/5 via-transparent to-transparent pointer-events-none" />
       <div className="absolute top-1/2 left-0 w-[600px] h-[600px] bg-gradient-to-r from-violet-500/5 via-transparent to-transparent pointer-events-none" />
 
-      {/* Header */}
-      <header className="border-b border-zinc-800 relative z-10">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <h1 className="text-xl font-bold">Agentic Frameworks</h1>
-            <nav className="hidden md:flex items-center gap-6 text-sm text-zinc-400">
-              <a href="#" className="hover:text-cyan-400 transition-colors">Frameworks</a>
-              <a href="#" className="hover:text-cyan-400 transition-colors">Compare</a>
-              <a href="#" className="hover:text-cyan-400 transition-colors">Submit</a>
-            </nav>
-          </div>
-          <a
-            href="https://github.com"
-            className="text-zinc-400 hover:text-white text-sm transition-colors"
-          >
-            GitHub
-          </a>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main className="max-w-6xl mx-auto px-6 relative z-10">
         {/* Hero - two column layout */}
-        <section className="py-16 md:py-24 grid md:grid-cols-2 gap-12 items-start">
+        <section className="pt-16 md:pt-24 pb-2 grid md:grid-cols-2 gap-12 items-start">
           {/* Left column - Title and description */}
           <div>
             <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
-              Find your agentic framework
+              Equip your agent with superpowers
             </h2>
             <p className="text-lg text-zinc-400 mb-8">
-              Battle-tested development systems for AI-assisted coding.
-              Like React and Vue for JavaScript—opinionated, complete solutions
-              for Claude Code, Codex, and other AI agents.
+              Frameworks are packages of workflows, skills, MCPs and more bundled together for your agent.
             </p>
 
-            {/* Agent logos */}
-            <div className="flex flex-wrap items-center gap-6">
-              <img src="/claude-full-dark.svg" alt="Claude" className="h-6 opacity-90 hover:opacity-100 hover:drop-shadow-[0_0_8px_rgba(255,140,50,0.4)] transition-all" />
-              <img src="/openai-full-dark.svg" alt="OpenAI" className="h-6 opacity-90 hover:opacity-100 hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] transition-all" />
-              <img src="/cursor-full-dark.svg" alt="Cursor" className="h-6 opacity-90 hover:opacity-100 hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.4)] transition-all" />
-              <img src="/windsurf-full-dark.svg" alt="Windsurf" className="h-6 opacity-90 hover:opacity-100 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-all" />
-            </div>
           </div>
 
           {/* Right column - Featured framework */}
-          <div className="group/featured relative rounded-xl border border-cyan-500/30 hover:border-cyan-400/60 transition-all duration-300 featured-glow">
-            <div className="rounded-xl p-6 h-full bg-gradient-to-br from-cyan-950/20 via-zinc-900/50 to-transparent">
-            {/* Content wrapper */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-xs">
-                <Sparkles size={14} className="text-cyan-400 fill-cyan-400/30" />
-                <span className="uppercase tracking-wide font-medium shimmer-text">Featured</span>
-              </div>
-              <div className="flex items-center gap-1 text-amber-400/80 text-sm">
-                <Star size={14} className="fill-amber-400/80" />
-                <span>1.2k</span>
-              </div>
+          {featuredFramework ? (
+            <FrameworkCard framework={featuredFramework} featured />
+          ) : (
+            <div className="rounded-xl border border-zinc-800 p-6 bg-zinc-900/50 animate-pulse">
+              <div className="h-4 bg-zinc-800 rounded w-20 mb-4" />
+              <div className="h-6 bg-zinc-800 rounded w-32 mb-3" />
+              <div className="h-4 bg-zinc-800 rounded w-full mb-2" />
+              <div className="h-4 bg-zinc-800 rounded w-3/4" />
             </div>
-            <h3 className="text-xl font-semibold text-white mb-1">Spec Kit</h3>
-            <div className="flex items-center gap-1 text-xs text-zinc-500 mb-3">
-              <span>by</span>
-              <span className="text-zinc-400">GitHub</span>
-              <BadgeCheck size={14} className="text-yellow-500 fill-yellow-500/20" />
-            </div>
-            <p className="text-zinc-400 text-sm leading-relaxed mb-4">
-              Toolkit for spec-driven development with AI coding agents.
-              Define structured specifications, let your agent build incrementally.
-              Includes slash commands for planning, building, and reviewing.
-            </p>
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-xs text-zinc-400">Works with:</span>
-              <div className="flex items-center gap-2">
-                <img src="/claude-star-dark.svg" alt="Claude" className="h-4 w-4 opacity-95" />
-                <img src="/openai-dark.svg" alt="OpenAI" className="h-4 w-4 opacity-95" />
-                <img src="/cursor-dark.svg" alt="Cursor" className="h-4 w-4 opacity-95" />
-                <img src="/windsurf-dark.svg" alt="Windsurf" className="h-4 w-4 opacity-95" />
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <PrimaryButton onClick={copyFeaturedCommand} icon={featuredCopied ? Check : Terminal}>
-                {featuredCopied ? "Copied" : "Install"}
-              </PrimaryButton>
-              <SecondaryButton href="https://github.com/github/spec-kit" icon={Github}>
-                GitHub
-              </SecondaryButton>
-            </div>
-            </div>
-          </div>
+          )}
         </section>
 
-        {/* Search row with count on right */}
-        <section className="flex items-center justify-between gap-6 pb-8 border-b border-zinc-800 mb-8">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search frameworks..."
-              className="w-full pl-10 pr-4 py-2.5 bg-transparent border border-zinc-800 rounded-lg text-white placeholder:text-zinc-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
-            />
-          </div>
-          <div className="text-sm text-zinc-400">
-            <span className="text-white font-semibold">{frameworks.length}</span> frameworks
+        {/* Agent carousel */}
+        <AgentCarousel />
+
+        {/* Header with search and sort */}
+        <section className="flex flex-col gap-4 pb-8 border-b border-zinc-800 mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <h3 className="text-lg font-semibold">All Frameworks</h3>
+              <div className="text-sm text-zinc-400">
+                <span className="text-white font-semibold">{filteredFrameworks.length}</span> frameworks
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Sort dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setSortMenuOpen(!sortMenuOpen)}
+                  onBlur={() => setTimeout(() => setSortMenuOpen(false), 150)}
+                  className="flex items-center gap-2 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+                >
+                  <ArrowUpDown size={14} />
+                  <span className="hidden sm:inline">{sortOptions.find(o => o.value === sortBy)?.label}</span>
+                  <ChevronDown size={14} className={`transition-transform ${sortMenuOpen ? "rotate-180" : ""}`} />
+                </button>
+                {sortMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-44 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-20 py-1">
+                    {sortOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          setSortBy(option.value);
+                          setSortMenuOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm hover:bg-zinc-800 transition-colors ${
+                          sortBy === option.value ? "text-lime-400" : "text-zinc-400 hover:text-white"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/* Search input */}
+              <div className="relative w-full md:w-64">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <input
+                  type="text"
+                  placeholder="Search frameworks..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-9 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-lime-500/50 focus:ring-1 focus:ring-lime-500/20 transition-colors"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </section>
 

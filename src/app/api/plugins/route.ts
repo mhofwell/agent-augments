@@ -29,7 +29,9 @@ export async function GET(request: NextRequest) {
       .eq("framework_id", framework);
 
     if (links && links.length > 0) {
-      frameworkPluginIds = links.map((l) => l.plugin_id);
+      frameworkPluginIds = links
+        .map((l) => l.plugin_id)
+        .filter((id): id is string => id !== null);
     } else {
       // No plugins linked to this framework
       return NextResponse.json({

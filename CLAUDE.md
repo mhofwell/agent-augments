@@ -15,8 +15,10 @@ bun run cron:sync  # Sync marketplaces + discover frameworks (weekly)
 ```
 
 ## Routes
-- `/` - Curated landing page (Frameworks → Official → Community sections)
-- `/browse` - Full plugin catalog with search, filters, and grid/list view
+- `/` - Curated landing page (Frameworks → Skills → Components)
+- `/frameworks` - Framework catalog
+- `/skills` - Official skills from verified publishers
+- `/components` - Component libraries
 
 ## Status
 See `.wip/STATUS.md` for details and next steps.

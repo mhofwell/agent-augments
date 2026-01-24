@@ -2,22 +2,12 @@
 
 import { useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Framework, PluginWithMarketplace } from "@/types/database";
-
-interface PluginFrameworkLink {
-  id: string;
-  plugin_id: string;
-  framework_id: string;
-}
+import type { Framework, PluginWithMarketplace, PluginFramework } from "@/types/database";
 
 interface UsePluginFrameworksResult {
-  // Get frameworks for a specific plugin
   getFrameworksForPlugin: (pluginId: string) => Promise<Framework[]>;
-  // Get plugins for a specific framework (with marketplace info)
   getPluginsForFramework: (frameworkId: string) => Promise<PluginWithMarketplace[]>;
-  // Get all links (for caching/bulk operations)
-  getAllLinks: () => Promise<PluginFrameworkLink[]>;
-  // Loading states per request
+  getAllLinks: () => Promise<PluginFramework[]>;
   isLoading: boolean;
   error: string | null;
 }
@@ -42,7 +32,9 @@ export function usePluginFrameworks(): UsePluginFrameworksResult {
       if (linksError) throw new Error(linksError.message);
       if (!links || links.length === 0) return [];
 
-      const frameworkIds = links.map(l => l.framework_id);
+      const frameworkIds = links
+        .map(l => l.framework_id)
+        .filter((id): id is string => id !== null);
 
       // Get the actual frameworks
       const { data: frameworks, error: frameworksError } = await supabase
@@ -79,7 +71,9 @@ export function usePluginFrameworks(): UsePluginFrameworksResult {
       if (linksError) throw new Error(linksError.message);
       if (!links || links.length === 0) return [];
 
-      const pluginIds = links.map(l => l.plugin_id);
+      const pluginIds = links
+        .map(l => l.plugin_id)
+        .filter((id): id is string => id !== null);
 
       // Get the actual plugins with marketplace info
       const { data: plugins, error: pluginsError } = await supabase
@@ -102,7 +96,7 @@ export function usePluginFrameworks(): UsePluginFrameworksResult {
     }
   }, []);
 
-  const getAllLinks = useCallback(async (): Promise<PluginFrameworkLink[]> => {
+  const getAllLinks = useCallback(async (): Promise<PluginFramework[]> => {
     setIsLoading(true);
     setError(null);
 

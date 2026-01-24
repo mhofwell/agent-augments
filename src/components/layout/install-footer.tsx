@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Terminal, Copy, Check } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 interface InstallFooterProps {
@@ -14,9 +15,16 @@ export function InstallFooter({
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = async () => {
-    await navigator.clipboard.writeText(command);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(command);
+      setCopied(true);
+      toast.success("Copied to clipboard", {
+        description: "Paste in Claude Code to install",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy to clipboard");
+    }
   };
 
   return (

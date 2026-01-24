@@ -1,12 +1,16 @@
 #!/usr/bin/env bun
 /**
- * Cron script to sync all marketplaces and discover new frameworks
+ * Cron script to sync all marketplaces and discover new frameworks, skills, and MCPs
  * Railway cron schedule: 0 0 * * 0 (weekly on Sunday midnight UTC)
  * Run with: bun scripts/cron-sync.ts
  */
 
 import { syncAllMarketplaces } from "@/lib/sync/marketplace-sync";
 import { syncFrameworks } from "@/lib/sync/framework-sync";
+import { syncStandaloneSkills } from "@/lib/sync/skill-sync";
+import { syncMcps } from "@/lib/sync/mcp-sync";
+import { syncPublishers } from "@/lib/sync/publisher-sync";
+import { syncUIFrameworks } from "@/lib/sync/ui-sync";
 
 async function main() {
   console.log("[Cron] Starting sync...");
@@ -69,6 +73,76 @@ async function main() {
     if (frameworkSummary.errors.length > 0) {
       console.log("[Cron] Framework sync errors:");
       frameworkSummary.errors.forEach((e) => console.log(`  - ${e}`));
+    }
+
+    // Sync standalone skills (SKILL.md repos)
+    console.log("\n[Cron] === Standalone Skill Discovery ===");
+    const skillSummary = await syncStandaloneSkills();
+
+    console.log("[Cron] Skill discovery completed");
+    console.log(JSON.stringify({
+      discovered: skillSummary.discovered,
+      added: skillSummary.added,
+      updated: skillSummary.updated,
+      skipped: skillSummary.skipped,
+      errors: skillSummary.errors.length,
+    }, null, 2));
+
+    if (skillSummary.errors.length > 0) {
+      console.log("[Cron] Skill sync errors:");
+      skillSummary.errors.forEach((e) => console.log(`  - ${e}`));
+    }
+
+    // Sync MCP servers
+    console.log("\n[Cron] === MCP Server Discovery ===");
+    const mcpSummary = await syncMcps();
+
+    console.log("[Cron] MCP discovery completed");
+    console.log(JSON.stringify({
+      discovered: mcpSummary.discovered,
+      added: mcpSummary.added,
+      updated: mcpSummary.updated,
+      skipped: mcpSummary.skipped,
+      errors: mcpSummary.errors.length,
+    }, null, 2));
+
+    if (mcpSummary.errors.length > 0) {
+      console.log("[Cron] MCP sync errors:");
+      mcpSummary.errors.forEach((e) => console.log(`  - ${e}`));
+    }
+
+    // Sync skill publishers (Vercel, Railway, etc.)
+    console.log("\n[Cron] === Skill Publisher Sync ===");
+    const publisherSummary = await syncPublishers();
+
+    console.log("[Cron] Publisher sync completed");
+    console.log(JSON.stringify({
+      publishersProcessed: publisherSummary.publishersProcessed,
+      skillsAdded: publisherSummary.skillsAdded,
+      skillsUpdated: publisherSummary.skillsUpdated,
+      errors: publisherSummary.errors.length,
+    }, null, 2));
+
+    if (publisherSummary.errors.length > 0) {
+      console.log("[Cron] Publisher sync errors:");
+      publisherSummary.errors.forEach((e) => console.log(`  - ${e}`));
+    }
+
+    // Sync UI frameworks (ShadCN, MagicUI, etc.)
+    console.log("\n[Cron] === UI Framework Sync ===");
+    const uiSummary = await syncUIFrameworks();
+
+    console.log("[Cron] UI framework sync completed");
+    console.log(JSON.stringify({
+      frameworksProcessed: uiSummary.frameworksProcessed,
+      frameworksAdded: uiSummary.frameworksAdded,
+      frameworksUpdated: uiSummary.frameworksUpdated,
+      errors: uiSummary.errors.length,
+    }, null, 2));
+
+    if (uiSummary.errors.length > 0) {
+      console.log("[Cron] UI framework sync errors:");
+      uiSummary.errors.forEach((e) => console.log(`  - ${e}`));
     }
 
     console.log("\n[Cron] All syncs completed successfully");

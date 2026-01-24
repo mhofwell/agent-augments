@@ -168,6 +168,20 @@
   animation: glow-pulse 3s ease-in-out infinite;
 }
 
+/* Violet glow pulse animation for design/component cards */
+@keyframes glow-pulse-violet {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.15), 0 0 40px rgba(139, 92, 246, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.25), 0 0 60px rgba(139, 92, 246, 0.15);
+  }
+}
+
+.featured-glow-violet {
+  animation: glow-pulse-violet 3s ease-in-out infinite;
+}
+
 /* Shimmer animation for featured badge */
 @keyframes shimmer {
   0% {
@@ -191,4 +205,22 @@
   -webkit-background-clip: text;
   background-clip: text;
   animation: shimmer 3s linear infinite;
+}
+
+/* Agent carousel scroll animation */
+@keyframes carousel-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.carousel-scroll {
+  animation: carousel-scroll 30s linear infinite;
+}
+
+.carousel-scroll:hover {
+  animation-play-state: paused;
 }
