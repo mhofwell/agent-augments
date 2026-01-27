@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, Suspense, useMemo } from "react";
-import { Star, Verified, BookOpen, ArrowLeft, Sparkles, BadgeCheck, Check, Search, X, ArrowUpDown, ChevronDown, Copy } from "lucide-react";
+import { Star, Verified, BookOpen, ArrowLeft, Sparkles, BadgeCheck, Check, Search, X, ArrowUpDown, ChevronDown, Copy, Users, Clock, Github } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { SiteHeader, SiteFooter } from "@/components/layout";
 import { PublisherCard } from "./publisher-card";
@@ -9,7 +10,7 @@ import { SkillCard } from "./skill-card";
 import { SkillModal } from "./skill-modal";
 import { AgentCarousel } from "./agent-carousel";
 import { PUBLISHER_LOGOS } from "./publisher-logos";
-import { formatStars } from "@/components/plugin/plugin-utils";
+import { formatStars, formatRelativeTime } from "@/components/plugin/plugin-utils";
 import { useSkillPublishers, type SkillPublisherWithSkills } from "@/hooks/useSkillPublishers";
 import type { PublisherSkill } from "@/types/database";
 
@@ -417,46 +418,83 @@ function PublisherDetail({ publisher, onBack, onSkillClick }: PublisherDetailPro
             )}
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-xl sm:text-2xl font-bold">{publisher.name}</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold">{publisher.name}</h2>
                 {publisher.is_official && (
-                  <Verified size={18} className="text-cyan-400" />
+                  <Verified size={20} className="text-cyan-400" />
                 )}
               </div>
-              <a
-                href={githubUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs sm:text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
-              >
-                {publisher.github_org}/{publisher.github_repo}
-              </a>
+              {/* Stats row */}
+              <div className="flex items-center gap-4 text-sm flex-wrap">
+                {publisher.github_stars && publisher.github_stars > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <Star size={14} className="text-amber-400 fill-amber-400/30" />
+                    <span className="text-zinc-100">{publisher.github_stars.toLocaleString()}</span>
+                    <span className="text-zinc-400">stars</span>
+                  </div>
+                )}
+                {publisher.contributor_count && publisher.contributor_count > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <Users size={14} className="text-zinc-400" />
+                    <span className="text-zinc-100">{publisher.contributor_count}</span>
+                    <span className="text-zinc-400">contributors</span>
+                  </div>
+                )}
+                {publisher.last_commit_at && (
+                  <div className="flex items-center gap-1.5">
+                    <Clock size={14} className="text-zinc-400" />
+                    <span className="text-zinc-400">Updated</span>
+                    <span className="text-zinc-100">{formatRelativeTime(publisher.last_commit_at)}</span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-1 text-amber-400">
-            <Star size={16} className="fill-amber-400" />
-            <span className="font-medium">
-              {publisher.github_stars?.toLocaleString()}
-            </span>
           </div>
         </div>
 
         <p className="text-zinc-400 mb-4">{publisher.description}</p>
 
         {/* Install command */}
-        <div className="flex items-center gap-2">
-          <code className="flex-1 min-w-0 px-4 py-2.5 bg-black rounded-lg font-mono text-sm border border-zinc-800 overflow-x-auto whitespace-nowrap text-cyan-400">
+        <div className="flex items-center gap-3 px-4 py-3 bg-black rounded-xl font-mono text-sm border border-zinc-800 mb-4">
+          <span className="text-zinc-500 select-none">$</span>
+          <code className="text-cyan-400 flex-1 overflow-x-auto whitespace-nowrap">
             {installCommand}
           </code>
           <button
             onClick={copyInstallCommand}
-            className="flex-shrink-0 p-2.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg transition-colors"
+            className="flex-shrink-0 p-1.5 hover:bg-zinc-800 rounded transition-colors"
           >
             {copied ? (
               <Check size={16} className="text-emerald-400" />
             ) : (
-              <Copy size={16} className="text-zinc-400" />
+              <Copy size={16} className="text-zinc-500" />
             )}
           </button>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-3">
+          {publisher.website_url && (
+            <Button asChild variant="outline" size="sm">
+              <a
+                href={publisher.website_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <BookOpen size={14} />
+                Documentation
+              </a>
+            </Button>
+          )}
+          <Button asChild variant="outline" size="sm">
+            <a
+              href={githubUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Github size={14} />
+              GitHub
+            </a>
+          </Button>
         </div>
       </div>
 

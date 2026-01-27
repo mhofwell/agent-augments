@@ -36,7 +36,6 @@ const LIBRARY_TECH_STACKS: Record<string, TechStack[]> = {
   "flowbite": ["tailwind"],
   "daisyui": ["tailwind"],
   "flyonui": ["tailwind"],
-  "frontend-design": ["react", "tailwind"],
 };
 
 const TECH_ICONS: Record<TechStack, { icon: string; label: string }> = {

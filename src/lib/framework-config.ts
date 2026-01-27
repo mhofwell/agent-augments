@@ -139,23 +139,6 @@ export const FRAMEWORK_WORKFLOWS: Record<string, FrameworkWorkflow> = {
 };
 
 /**
- * Generate consistent color styles for methodology/autonomy cards.
- */
-export function getColorStyles(colorName: string, bgOpacity = 0.05, borderOpacity = 0.2, iconBgOpacity = 0.15) {
-  const color = COLOR_MAP[colorName] || COLOR_MAP.cyan;
-  return {
-    card: {
-      backgroundColor: `rgba(${color.rgb}, ${bgOpacity})`,
-      borderColor: `rgba(${color.rgb}, ${borderOpacity})`,
-    },
-    iconBg: {
-      backgroundColor: `rgba(${color.rgb}, ${iconBgOpacity})`,
-    },
-    iconColor: color.hex,
-  };
-}
-
-/**
  * Get methodology display config, returns null if not found.
  */
 export function getMethodologyConfig(methodology: string | null | undefined) {

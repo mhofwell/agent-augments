@@ -114,12 +114,13 @@ export default function FrameworkPage({ params }: { params: Promise<{ slug: stri
 
         {/* Hero Section */}
         <section className="mb-12">
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 sm:p-6">
           {/* Top row: Title on left, Agent icons on right */}
           <div className="flex items-start justify-between gap-5 mb-6">
             {/* Title + stats row */}
             <div>
               {/* Title */}
-                <h1 className="text-3xl font-bold mb-2">{framework.name}</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold mb-2">{framework.name}</h1>
 
                 {/* Stats row - amber for quality signals, zinc for metadata */}
                 <div className="flex items-center gap-5 text-sm flex-wrap">
@@ -168,7 +169,7 @@ export default function FrameworkPage({ params }: { params: Promise<{ slug: stri
           </p>
 
           {/* Install command */}
-          <div className="flex items-center gap-3 px-4 py-3 bg-zinc-900 rounded-xl font-mono text-sm border border-zinc-800 mb-4">
+          <div className="flex items-center gap-3 px-4 py-3 bg-black rounded-xl font-mono text-sm border border-zinc-800 mb-4">
             <span className="text-zinc-500 select-none">$</span>
             <code className="text-lime-400 flex-1 overflow-x-auto whitespace-nowrap">
               {framework.install_command}
@@ -211,6 +212,7 @@ export default function FrameworkPage({ params }: { params: Promise<{ slug: stri
                 </a>
               </Button>
             )}
+          </div>
           </div>
         </section>
 

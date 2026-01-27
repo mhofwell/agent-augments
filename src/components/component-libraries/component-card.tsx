@@ -13,11 +13,9 @@ const COMPONENT_LOGOS: Record<string, string> = {
   "magic-ui": "/magicui-light.png",
   "material-ui": "/material-ui.svg",
   "chakra-ui": "/chakra-ui.svg",
-  "storybook": "/storybook.svg",
   "flowbite": "/flowbite.svg",
   "daisyui": "/daisyui.svg",
   "flyonui": "/flyonui.svg",
-  "frontend-design": "/claude-star-dark.svg",
 };
 
 // Tech stack icons for each library
@@ -31,7 +29,6 @@ const LIBRARY_TECH_STACKS: Record<string, TechStack[]> = {
   "flowbite": ["tailwind"],
   "daisyui": ["tailwind"],
   "flyonui": ["tailwind"],
-  "frontend-design": ["react", "tailwind"],
 };
 
 const TECH_ICONS: Record<TechStack, { icon: string; label: string }> = {

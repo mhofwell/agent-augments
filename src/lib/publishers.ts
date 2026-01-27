@@ -33,12 +33,6 @@ export function getPublisher(githubOwner: string): Publisher | null {
   return publishers[githubOwner.toLowerCase()] || null;
 }
 
-// Check if a marketplace is from an official publisher
-export function isOfficialPublisher(githubOwner: string): boolean {
-  const publisher = getPublisher(githubOwner);
-  return publisher?.isOfficial ?? false;
-}
-
 // Category display name mapping
 export const categoryDisplayNames: Record<string, string> = {
   development: "Development",
