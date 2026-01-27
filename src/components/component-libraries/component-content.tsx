@@ -15,7 +15,7 @@ import {
   Plug,
 } from "lucide-react";
 import { toast } from "sonner";
-import { SiteHeader } from "@/components/layout";
+import { SiteHeader, SiteFooter } from "@/components/layout";
 import { ComponentCard } from "./component-card";
 import { ComponentModal } from "./component-modal";
 import { AgentCarousel } from "@/components/skills/agent-carousel";
@@ -190,7 +190,7 @@ function ComponentContentInner() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2 text-xs">
                     <Sparkles size={14} className="text-violet-400 fill-violet-400/30" />
-                    <span className="uppercase tracking-wide font-medium text-violet-400">
+                    <span className="uppercase tracking-wide font-medium shimmer-text">
                       Featured
                     </span>
                   </div>
@@ -224,8 +224,7 @@ function ComponentContentInner() {
 
                 {/* Tech stack */}
                 {LIBRARY_TECH_STACKS[featuredLibrary.slug] && (
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-xs text-zinc-500">Built with</span>
+                  <div className="flex items-center gap-2 mb-4">
                     {LIBRARY_TECH_STACKS[featuredLibrary.slug].map((tech) => {
                       const { icon, label } = TECH_ICONS[tech];
                       return (
@@ -436,19 +435,7 @@ function ComponentContentInner() {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-zinc-800 py-8 relative z-10">
-        <div className="max-w-6xl mx-auto px-6 text-center text-sm text-zinc-500">
-          <span className="text-violet-400">MCP</span> servers follow the{" "}
-          <a
-            href="https://modelcontextprotocol.io"
-            className="text-violet-400 hover:underline"
-          >
-            Model Context Protocol
-          </a>
-          .
-        </div>
-      </footer>
+      <SiteFooter />
 
       {/* Library Detail Modal */}
       <ComponentModal

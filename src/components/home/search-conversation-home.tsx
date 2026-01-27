@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Search, Star, Copy, Check, ArrowRight, Sparkles, Command } from "lucide-react";
 import { toast } from "sonner";
@@ -160,20 +160,16 @@ function ResultCard({
 
 export function SearchConversationHome() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<FrameworkResult[]>([]);
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Search logic
-  useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
+  // Derive results from query (no effect needed for derived state)
+  const results = useMemo(() => {
+    if (!query.trim()) return [];
 
     const searchTerms = query.toLowerCase().split(/\s+/);
 
-    const filtered = ALL_FRAMEWORKS.filter((fw) => {
+    return ALL_FRAMEWORKS.filter((fw) => {
       const searchable = [
         fw.name.toLowerCase(),
         fw.description.toLowerCase(),
@@ -182,8 +178,6 @@ export function SearchConversationHome() {
 
       return searchTerms.every((term) => searchable.includes(term));
     }).sort((a, b) => b.stars - a.stars);
-
-    setResults(filtered);
   }, [query]);
 
   const handleSuggestionClick = (suggestion: string) => {

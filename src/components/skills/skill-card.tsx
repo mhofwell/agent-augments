@@ -3,14 +3,12 @@
 import { useState } from "react";
 import { Copy, Check, BookOpen, Layers } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { PublisherSkill } from "@/types/database";
 
 interface SkillCardProps {
   skill: PublisherSkill;
-  publisherSlug: string;
   publisherOrg: string;
   publisherRepo: string;
   onClick?: () => void;
@@ -18,7 +16,6 @@ interface SkillCardProps {
 
 export function SkillCard({
   skill,
-  publisherSlug,
   publisherOrg,
   publisherRepo,
   onClick,

@@ -268,7 +268,7 @@ export function LivingCommandHome() {
             <span className="w-1 h-1 rounded-full bg-zinc-700" />
             <span><span className="text-zinc-300 font-medium">156</span> skills</span>
             <span className="w-1 h-1 rounded-full bg-zinc-700" />
-            <span>Works with Claude, Cursor, Windsurf</span>
+            <span>Claude · Cursor · Windsurf</span>
           </div>
 
           {/* CTA */}

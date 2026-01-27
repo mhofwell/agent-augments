@@ -1,32 +1,17 @@
 "use client";
 
 import { useState, Suspense, useMemo } from "react";
-import { Star, Verified, BookOpen, ArrowLeft, Sparkles, BadgeCheck, Check, Search, X, ArrowUpDown, ChevronDown, Copy, Github } from "lucide-react";
+import { Star, Verified, BookOpen, ArrowLeft, Sparkles, BadgeCheck, Check, Search, X, ArrowUpDown, ChevronDown, Copy } from "lucide-react";
 import { toast } from "sonner";
-import { SiteHeader } from "@/components/layout";
+import { SiteHeader, SiteFooter } from "@/components/layout";
 import { PublisherCard } from "./publisher-card";
 import { SkillCard } from "./skill-card";
 import { SkillModal } from "./skill-modal";
 import { AgentCarousel } from "./agent-carousel";
+import { PUBLISHER_LOGOS } from "./publisher-logos";
+import { formatStars } from "@/components/plugin/plugin-utils";
 import { useSkillPublishers, type SkillPublisherWithSkills } from "@/hooks/useSkillPublishers";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import type { PublisherSkill } from "@/types/database";
-
-// Publisher logo mapping (dark mode friendly)
-const PUBLISHER_LOGOS: Record<string, string> = {
-  vercel: "/vercel.svg",
-  anthropic: "/claude-star-dark.svg",
-  railway: "/railway-dark.svg",
-  openai: "/openai-dark.svg",
-  huggingface: "/huggingface-dark.svg",
-  cloudflare: "/cloudflare-dark.svg",
-  trailofbits: "/trailofbits-dark.svg",
-  stripe: "/stripe-dark.svg",
-  posit: "/posit-dark.svg",
-  apify: "/apify-dark.svg",
-  aws: "/aws-dark.svg",
-};
 
 export function SkillsContent() {
   return (
@@ -72,9 +57,6 @@ function SkillsContentInner() {
     setSkillModalPublisher(publisher);
     setSkillModalOpen(true);
   };
-
-  // Calculate total skills
-  const totalSkills = publishers.reduce((acc, p) => acc + (p.skills?.length || 0), 0);
 
   // Filter and sort publishers
   const filteredPublishers = useMemo(() => {
@@ -178,52 +160,52 @@ function SkillsContentInner() {
                       </div>
                       <div className="flex items-center gap-1 text-amber-400/80 text-sm">
                         <Star size={14} className="fill-amber-400/80" />
-                        <span>{featuredPublisher.github_stars ? (featuredPublisher.github_stars >= 1000 ? `${(featuredPublisher.github_stars / 1000).toFixed(1)}k` : featuredPublisher.github_stars) : 0}</span>
+                        <span>{formatStars(featuredPublisher.github_stars)}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 mb-1">
-                      {PUBLISHER_LOGOS[featuredPublisher.slug] && (
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-zinc-800/50 flex items-center justify-center">
+                    {/* ASCII file tree */}
+                    <div className="font-mono text-sm mb-4">
+                      {/* Root with publisher name */}
+                      <div className="flex items-center gap-2 mb-2">
+                        {PUBLISHER_LOGOS[featuredPublisher.slug] && (
                           <img
                             src={PUBLISHER_LOGOS[featuredPublisher.slug]}
                             alt={`${featuredPublisher.name} logo`}
-                            className="w-6 h-6 object-contain"
+                            className="w-4 h-4 object-contain"
                           />
-                        </div>
-                      )}
-                      <h3 className="text-xl font-semibold text-white">{featuredPublisher.name}</h3>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-zinc-500 mb-3">
-                      <span>by</span>
-                      <span className="text-zinc-400">{featuredPublisher.github_org}</span>
-                      {featuredPublisher.is_official && (
-                        <BadgeCheck size={14} className="text-yellow-500 fill-yellow-500/20" />
-                      )}
-                    </div>
-
-                    <p className="text-zinc-400 text-sm leading-relaxed mb-4">
-                      {featuredPublisher.description}
-                    </p>
-
-                    {/* Skills preview */}
-                    {featuredPublisher.skills && featuredPublisher.skills.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {featuredPublisher.skills.slice(0, 2).map((skill) => (
-                          <span
-                            key={skill.id}
-                            className="px-2 py-1 text-xs rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700"
-                          >
-                            {skill.name}
-                          </span>
-                        ))}
-                        {featuredPublisher.skills.length > 2 && (
-                          <span className="px-2 py-1 text-xs rounded-full bg-zinc-800 text-zinc-400">
-                            +{featuredPublisher.skills.length - 2} more
-                          </span>
+                        )}
+                        <span className="text-white font-semibold">{featuredPublisher.name}</span>
+                        {featuredPublisher.is_official && (
+                          <BadgeCheck size={12} className="text-yellow-500 fill-yellow-500/20" />
                         )}
                       </div>
-                    )}
+
+                      {/* Skills as file tree */}
+                      {featuredPublisher.skills && featuredPublisher.skills.length > 0 && (
+                        <div className="ml-2 text-zinc-500">
+                          {featuredPublisher.skills.slice(0, 4).map((skill, idx) => {
+                            const isLast = idx === Math.min(featuredPublisher.skills!.length, 4) - 1 && featuredPublisher.skills!.length <= 4;
+                            return (
+                              <div key={skill.id} className="flex items-center leading-6">
+                                <span className="text-zinc-700 select-none">{isLast ? "└─" : "├─"}</span>
+                                <span className="ml-1 text-cyan-400/80">{skill.name}</span>
+                              </div>
+                            );
+                          })}
+                          {featuredPublisher.skills.length > 4 && (
+                            <div className="flex items-center leading-6">
+                              <span className="text-zinc-700 select-none">└─</span>
+                              <span className="ml-1 text-zinc-600">+{featuredPublisher.skills.length - 4} more</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="text-zinc-500 text-sm leading-relaxed mb-4">
+                      {featuredPublisher.description}
+                    </p>
 
                     {/* Actions */}
                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -366,12 +348,7 @@ function SkillsContentInner() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-zinc-800 py-8 relative z-10">
-        <div className="max-w-6xl mx-auto px-6 text-center text-sm text-zinc-500">
-          Skills follow the <a href="https://agentskills.io" className="text-cyan-400 hover:underline">Agent Skills</a> specification.
-        </div>
-      </footer>
+      <SiteFooter />
 
       {/* Skill Detail Modal */}
       <SkillModal
@@ -492,7 +469,6 @@ function PublisherDetail({ publisher, onBack, onSkillClick }: PublisherDetailPro
           <SkillCard
             key={skill.id}
             skill={skill}
-            publisherSlug={publisher.slug}
             publisherOrg={publisher.github_org}
             publisherRepo={publisher.github_repo}
             onClick={() => onSkillClick?.(skill)}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check, Github, Plug, BookOpen, BadgeCheck, Star } from "lucide-react";
+import { Copy, Check, Github, Plug, BookOpen, BadgeCheck, Star, ExternalLink, HelpCircle, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -11,6 +11,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 import type { ComponentLibrary } from "@/types/database";
 import { trackComponentInstall } from "@/hooks/useComponentLibraries";
 
@@ -94,6 +100,7 @@ export function ComponentModal({ library, open, onOpenChange }: ComponentModalPr
   const [copiedMcp, setCopiedMcp] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<AgentId>("cursor");
   const [selectedPkgManager, setSelectedPkgManager] = useState<PackageManagerId>("pnpm");
+  const [helpOpen, setHelpOpen] = useState(false);
 
   if (!library) return null;
 
@@ -130,7 +137,7 @@ export function ComponentModal({ library, open, onOpenChange }: ComponentModalPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl bg-zinc-900 border-zinc-800 p-0 gap-0 max-h-[90vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="sm:max-w-2xl bg-card border-border p-0 gap-0 max-h-[90vh] overflow-y-auto overflow-x-hidden">
         {/* Header */}
         <DialogHeader className="p-6 pb-4">
           <div className="flex items-start gap-4">
@@ -146,7 +153,7 @@ export function ComponentModal({ library, open, onOpenChange }: ComponentModalPr
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <DialogTitle className="text-2xl font-bold break-words text-white">
+                <DialogTitle className="text-2xl font-bold break-words text-foreground">
                   {library.name}
                 </DialogTitle>
                 {library.is_official && (
@@ -163,49 +170,35 @@ export function ComponentModal({ library, open, onOpenChange }: ComponentModalPr
           </div>
         </DialogHeader>
 
-        <Separator className="bg-zinc-800" />
+        <Separator />
 
         {/* Content */}
         <div className="p-6 space-y-6 overflow-hidden">
-          {/* Description */}
-          <div>
-            <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">
-              Description
-            </h3>
-            <p className="text-zinc-300 leading-relaxed break-words">
-              {library.description}
-            </p>
-          </div>
+          {/* Description - no header, just the text */}
+          <p className="text-muted-foreground leading-relaxed break-words">
+            {library.description}
+          </p>
 
           {/* Tech Stack */}
           {techStack.length > 0 && (
-            <div>
-              <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">
-                Tech Stack
-              </h3>
-              <div className="flex items-center gap-3">
-                {techStack.map((tech) => {
-                  const { icon, label } = TECH_ICONS[tech];
-                  return (
-                    <div key={tech} className="flex items-center gap-2">
-                      <img
-                        src={icon}
-                        alt={label}
-                        className="w-6 h-6"
-                      />
-                      <span className="text-sm text-zinc-300">{label}</span>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="flex items-center gap-3">
+              {techStack.map((tech) => {
+                const { icon, label } = TECH_ICONS[tech];
+                return (
+                  <div key={tech} className="flex items-center gap-1.5">
+                    <img src={icon} alt={label} className="w-5 h-5" />
+                    <span className="text-sm text-foreground">{label}</span>
+                  </div>
+                );
+              })}
             </div>
           )}
 
           {/* MCP Integration */}
           {library.has_mcp && (
-            <div>
-              <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">
-                MCP Server
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                Installation
               </h3>
 
               {/* Dynamic install with agent + package manager tabs */}
@@ -217,11 +210,12 @@ export function ComponentModal({ library, open, onOpenChange }: ComponentModalPr
                       <button
                         key={agent.id}
                         onClick={() => setSelectedAgent(agent.id)}
-                        className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                        className={cn(
+                          "px-3 py-1.5 text-sm rounded-md transition-colors",
                           selectedAgent === agent.id
-                            ? "bg-violet-500/20 text-violet-400 border border-violet-500/30"
-                            : "text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800"
-                        }`}
+                            ? "bg-violet-500/10 text-violet-400 border border-violet-500/30"
+                            : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                        )}
                       >
                         {agent.label}
                       </button>
@@ -229,18 +223,19 @@ export function ComponentModal({ library, open, onOpenChange }: ComponentModalPr
                   </div>
 
                   {/* Package manager tabs + command */}
-                  <div className="bg-black rounded-lg border border-zinc-800 overflow-hidden">
+                  <div className="bg-background rounded-lg border border-border overflow-hidden">
                     {/* Package manager row */}
-                    <div className="flex items-center gap-1 px-3 py-2 border-b border-zinc-800 bg-zinc-900/50">
+                    <div className="flex items-center gap-1 px-3 py-2 border-b border-border bg-card/50">
                       {PACKAGE_MANAGERS.map((pm) => (
                         <button
                           key={pm.id}
                           onClick={() => setSelectedPkgManager(pm.id)}
-                          className={`px-2.5 py-1 text-xs rounded transition-colors ${
+                          className={cn(
+                            "px-2.5 py-1 text-xs rounded transition-colors",
                             selectedPkgManager === pm.id
-                              ? "bg-zinc-700 text-white"
-                              : "text-zinc-500 hover:text-zinc-300"
-                          }`}
+                              ? "bg-secondary text-foreground"
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
                         >
                           {pm.label}
                         </button>
@@ -256,27 +251,59 @@ export function ComponentModal({ library, open, onOpenChange }: ComponentModalPr
                         variant="ghost"
                         size="icon"
                         onClick={copyMcpCommand}
-                        className="flex-shrink-0 h-8 w-8 hover:bg-zinc-800"
+                        className="flex-shrink-0 h-8 w-8"
                       >
                         {copiedMcp ? (
                           <Check size={14} className="text-emerald-400" />
                         ) : (
-                          <Copy size={14} className="text-zinc-400" />
+                          <Copy size={14} className="text-muted-foreground" />
                         )}
                       </Button>
                     </div>
                   </div>
+
+                  {/* Help collapsible */}
+                  <Collapsible open={helpOpen} onOpenChange={setHelpOpen}>
+                    <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                      <HelpCircle size={14} />
+                      <span>First time using MCP?</span>
+                      <ChevronDown
+                        size={14}
+                        className={cn("transition-transform", helpOpen && "rotate-180")}
+                      />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-3">
+                      <div className="bg-background rounded-lg border border-border p-4 space-y-3 text-sm text-muted-foreground">
+                        <ol className="list-decimal list-inside space-y-2">
+                          <li>Choose your agent (Cursor, Claude, etc.) above</li>
+                          <li>Select your preferred package manager</li>
+                          <li>Copy and run the install command in your terminal</li>
+                          <li>Restart your agent to enable the MCP server</li>
+                        </ol>
+                        <Separator />
+                        <a
+                          href="https://modelcontextprotocol.io"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-violet-400 hover:underline"
+                        >
+                          Learn more about MCP
+                          <ExternalLink size={12} />
+                        </a>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
               ) : library.mcp_install_command ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  <code className="flex-1 min-w-0 px-4 py-3 bg-black rounded-lg font-mono text-sm border border-zinc-800 overflow-x-auto whitespace-nowrap text-violet-400">
+                  <code className="flex-1 min-w-0 px-4 py-3 bg-background rounded-lg font-mono text-sm border border-border overflow-x-auto whitespace-nowrap text-violet-400">
                     {library.mcp_install_command}
                   </code>
                   <Button
                     variant="secondary"
                     size="icon"
                     onClick={copyMcpCommand}
-                    className="flex-shrink-0 bg-zinc-800 hover:bg-zinc-700 border-zinc-700"
+                    className="flex-shrink-0"
                   >
                     {copiedMcp ? (
                       <Check size={16} className="text-emerald-400" />
@@ -292,11 +319,7 @@ export function ComponentModal({ library, open, onOpenChange }: ComponentModalPr
           {/* Actions */}
           <div className="flex gap-3 pt-2">
             {library.github_url && (
-              <Button
-                variant="secondary"
-                className="flex-1 bg-zinc-800 hover:bg-zinc-700 border-zinc-700"
-                asChild
-              >
+              <Button variant="secondary" className="flex-1" asChild>
                 <a href={library.github_url} target="_blank" rel="noopener noreferrer">
                   <Github size={18} className="mr-2" />
                   GitHub
@@ -304,11 +327,7 @@ export function ComponentModal({ library, open, onOpenChange }: ComponentModalPr
               </Button>
             )}
             {library.docs_url && (
-              <Button
-                variant="secondary"
-                className="flex-1 bg-zinc-800 hover:bg-zinc-700 border-zinc-700"
-                asChild
-              >
+              <Button variant="secondary" className="flex-1" asChild>
                 <a href={library.docs_url} target="_blank" rel="noopener noreferrer">
                   <BookOpen size={18} className="mr-2" />
                   Docs

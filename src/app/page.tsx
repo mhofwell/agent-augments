@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search, Layers, Zap, Command, X, Download, ChevronDown, Palette } from "lucide-react";
-import { toast } from "sonner";
+import { Search, Layers, Zap, Command, X, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SiteHeader } from "@/components/layout";
+import { SiteHeader, SiteFooter } from "@/components/layout";
 import { useFrameworks } from "@/hooks";
 import { useSkillPublishers } from "@/hooks/useSkillPublishers";
 import { useComponentLibraries } from "@/hooks/useComponentLibraries";
@@ -14,40 +13,14 @@ import { ComponentCard } from "@/components/component-libraries/component-card";
 import { PublisherCard } from "@/components/skills/publisher-card";
 import { AgentCarousel } from "@/components/skills/agent-carousel";
 
-// Loadout item type
-type LoadoutItem = {
-  id: string;
-  name: string;
-  type: "framework" | "component";
-  command: string;
-};
-
 export default function Home() {
   const [search, setSearch] = useState("");
-  const [loadout, setLoadout] = useState<LoadoutItem[]>([]);
-  const [loadoutOpen, setLoadoutOpen] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
 
   // Data hooks
   const { frameworks, isLoading: frameworksLoading } = useFrameworks();
   const { publishers, isLoading: publishersLoading } = useSkillPublishers();
   const { libraries, isLoading: librariesLoading } = useComponentLibraries({ sort: "stars" });
-
-  // Remove from loadout
-  const removeFromLoadout = (id: string) => {
-    setLoadout(loadout.filter(l => l.id !== id));
-  };
-
-  // Export loadout as script
-  const exportLoadout = () => {
-    const script = `# Agent Augments Loadout
-# Generated ${new Date().toISOString().split("T")[0]}
-
-${loadout.map(item => item.command).join("\n")}
-`;
-    navigator.clipboard.writeText(script);
-    toast.success("Loadout script copied!");
-  };
 
   const isLoading = frameworksLoading || publishersLoading || librariesLoading;
   const hasSearch = search.length > 0;
@@ -255,81 +228,7 @@ ${loadout.map(item => item.command).join("\n")}
         )}
       </main>
 
-      {/* Loadout drawer */}
-      {loadout.length > 0 && (
-        <div className="fixed bottom-6 right-6 z-50">
-          {loadoutOpen ? (
-            <div className="w-80 bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4">
-              <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-                <div className="flex items-center gap-2">
-                  <Layers size={16} className="text-cyan-400" />
-                  <span className="font-medium">Your Loadout</span>
-                  <span className="text-xs text-zinc-500">({loadout.length})</span>
-                </div>
-                <button onClick={() => setLoadoutOpen(false)} className="p-1 hover:bg-zinc-800 rounded">
-                  <ChevronDown size={16} className="text-zinc-400" />
-                </button>
-              </div>
-
-              <div className="max-h-64 overflow-y-auto p-2 space-y-1">
-                {loadout.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/50"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      {item.type === "framework" ? (
-                        <Layers size={12} className="text-cyan-400 shrink-0" />
-                      ) : (
-                        <Palette size={12} className="text-violet-400 shrink-0" />
-                      )}
-                      <span className="text-sm truncate">{item.name}</span>
-                    </div>
-                    <button
-                      onClick={() => removeFromLoadout(item.id)}
-                      className="p-1 hover:bg-zinc-700 rounded shrink-0"
-                    >
-                      <X size={12} className="text-zinc-500" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="p-3 border-t border-zinc-800">
-                <button
-                  onClick={exportLoadout}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-cyan-500 text-black font-medium hover:bg-cyan-400 transition-colors"
-                >
-                  <Download size={16} />
-                  Export Install Script
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => setLoadoutOpen(true)}
-              className="flex items-center gap-3 px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-full shadow-xl hover:border-zinc-600 transition-all"
-            >
-              <Layers size={18} className="text-cyan-400" />
-              <span className="font-medium">Loadout</span>
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-cyan-500 text-black text-xs font-bold">
-                {loadout.length}
-              </span>
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Footer stats */}
-      <footer className="relative z-10 border-t border-zinc-800/50 py-8">
-        <div className="max-w-6xl mx-auto px-6 flex items-center justify-center gap-8 text-sm text-zinc-600">
-          <span><span className="text-zinc-400">{frameworks.length}</span> frameworks</span>
-          <span className="w-1 h-1 rounded-full bg-zinc-800" />
-          <span><span className="text-zinc-400">{publishers.length}</span> skill publishers</span>
-          <span className="w-1 h-1 rounded-full bg-zinc-800" />
-          <span><span className="text-zinc-400">{libraries.length}</span> component libraries</span>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

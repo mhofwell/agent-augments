@@ -65,7 +65,15 @@ export function formatNumber(num: number | null | undefined): string {
   return num.toString();
 }
 
-export function formatDate(dateString: string | null | undefined): string {
+export function formatStars(stars: number | null | undefined): string {
+  if (!stars) return "0";
+  if (stars >= 1000) {
+    return `${(stars / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+  }
+  return stars.toString();
+}
+
+export function formatRelativeTime(dateString: string | null | undefined): string {
   if (!dateString) return "";
   const date = new Date(dateString);
   const now = new Date();
@@ -79,6 +87,9 @@ export function formatDate(dateString: string | null | undefined): string {
   if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
   return `${Math.floor(diffDays / 365)} years ago`;
 }
+
+// Alias for backwards compatibility
+export const formatDate = formatRelativeTime;
 
 export function getInstallCommand(pluginName: string, marketplaceRepo: string): string {
   return `/plugin install ${pluginName}@${marketplaceRepo}`;

@@ -12,7 +12,6 @@ interface AgentCompatibilityRowProps {
   item: CompatibleItem | null | undefined;
   size?: "sm" | "md" | "lg";
   showTooltips?: boolean;
-  showLabel?: boolean;
   className?: string;
 }
 
@@ -30,14 +29,10 @@ export function AgentCompatibilityRow({
   item,
   size = "md",
   showTooltips = true,
-  showLabel = false,
   className,
 }: AgentCompatibilityRowProps) {
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      {showLabel && (
-        <span className="text-xs text-muted-foreground">Works with:</span>
-      )}
       <div className="flex items-center gap-2">
         {agents.map((agent) => {
           const incompatibilityReason = getIncompatibilityReason(item, agent.id);

@@ -4,38 +4,13 @@ import { useState } from "react";
 import { Copy, Check, Star, BadgeCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import type { SkillPublisher, PublisherSkill } from "@/types/database";
-
-type SkillPublisherWithSkills = SkillPublisher & {
-  skills: PublisherSkill[];
-};
-
-// Publisher logo mapping (dark mode friendly)
-const PUBLISHER_LOGOS: Record<string, string> = {
-  vercel: "/vercel.svg",
-  anthropic: "/claude-star-dark.svg",
-  railway: "/railway-dark.svg",
-  openai: "/openai-dark.svg",
-  huggingface: "/huggingface-dark.svg",
-  cloudflare: "/cloudflare-dark.svg",
-  trailofbits: "/trailofbits-dark.svg",
-  stripe: "/stripe-dark.svg",
-  posit: "/posit-dark.svg",
-  apify: "/apify-dark.svg",
-  aws: "/aws-dark.svg",
-};
+import { formatStars } from "@/components/plugin/plugin-utils";
+import { PUBLISHER_LOGOS } from "./publisher-logos";
+import type { SkillPublisherWithSkills } from "@/hooks/useSkillPublishers";
 
 interface PublisherCardProps {
   publisher: SkillPublisherWithSkills;
   onClick?: () => void;
-}
-
-function formatStars(stars: number | null): string {
-  if (!stars) return "0";
-  if (stars >= 1000) {
-    return `${(stars / 1000).toFixed(1)}k`;
-  }
-  return stars.toString();
 }
 
 export function PublisherCard({ publisher, onClick }: PublisherCardProps) {
@@ -105,12 +80,12 @@ export function PublisherCard({ publisher, onClick }: PublisherCardProps) {
       </div>
 
       {/* Description */}
-      <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 mb-4 flex-1">
+      <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 mb-4">
         {publisher.description || "Skills from this publisher"}
       </p>
 
       {/* Skills tree */}
-      <div className="mb-4 font-mono text-[11px] leading-5">
+      <div className="mb-4 font-mono text-[11px] leading-5 flex-1">
         {skillCount > 0 ? (
           <div className="text-zinc-500">
             {displaySkills.map((skill, idx) => {

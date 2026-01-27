@@ -11,24 +11,16 @@ import {
   Users,
   Clock,
   GitMerge,
-  Zap,
-  Server,
-  Bot,
   BookOpen,
-  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
-import { SiteHeader } from "@/components/layout";
+import { Button } from "@/components/ui/button";
+import { SiteHeader, SiteFooter } from "@/components/layout";
 import { formatRelativeTime } from "@/components/framework/framework-utils";
 import {
   AgentCompatibilityRow,
-  MethodologyCard,
-  AutonomyCard,
-  UseCasesBadges,
-  FeaturesList,
-  WorkflowTimeline,
+  FrameworkOverview,
 } from "@/components/framework/shared";
-import { AGENT_CONFIG_TYPES } from "@/lib/framework-config";
 import type { FrameworkWithComponents } from "@/types/database";
 
 export default function FrameworkPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -129,32 +121,32 @@ export default function FrameworkPage({ params }: { params: Promise<{ slug: stri
               {/* Title */}
                 <h1 className="text-3xl font-bold mb-2">{framework.name}</h1>
 
-                {/* Stats row */}
+                {/* Stats row - amber for quality signals, zinc for metadata */}
                 <div className="flex items-center gap-5 text-sm flex-wrap">
                   {framework.stars && framework.stars > 0 && (
                     <div className="flex items-center gap-1.5">
-                      <Star size={14} className="text-amber-300" />
+                      <Star size={14} className="text-amber-400 fill-amber-400/30" />
                       <span className="text-zinc-100">{framework.stars.toLocaleString()}</span>
                       <span className="text-zinc-400">stars</span>
                     </div>
                   )}
                   {framework.contributors_count && framework.contributors_count > 0 && (
                     <div className="flex items-center gap-1.5">
-                      <Users size={14} className="text-cyan-400" />
+                      <Users size={14} className="text-zinc-400" />
                       <span className="text-zinc-100">{framework.contributors_count}</span>
                       <span className="text-zinc-400">contributors</span>
                     </div>
                   )}
                   {framework.last_commit_at && (
                     <div className="flex items-center gap-1.5">
-                      <Clock size={14} className="text-emerald-400" />
+                      <Clock size={14} className="text-zinc-400" />
                       <span className="text-zinc-400">Updated</span>
                       <span className="text-zinc-100">{formatRelativeTime(framework.last_commit_at)}</span>
                     </div>
                   )}
                   {framework.open_issues_count !== null && framework.open_issues_count > 0 && (
                     <div className="flex items-center gap-1.5">
-                      <GitMerge size={14} className="text-violet-400" />
+                      <GitMerge size={14} className="text-zinc-400" />
                       <span className="text-zinc-100">{framework.open_issues_count}</span>
                       <span className="text-zinc-400">open issues</span>
                     </div>
@@ -193,233 +185,43 @@ export default function FrameworkPage({ params }: { params: Promise<{ slug: stri
             </button>
           </div>
 
-          {/* Action links */}
-          <div className="flex items-center gap-4">
+          {/* Action buttons */}
+          <div className="flex items-center gap-3">
             {framework.homepage && (
-              <a
-                href={framework.homepage}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors"
-              >
-                <BookOpen size={16} />
-                Documentation
-              </a>
+              <Button asChild variant="outline" size="sm">
+                <a
+                  href={framework.homepage}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <BookOpen size={14} />
+                  Documentation
+                </a>
+              </Button>
             )}
             {framework.github_url && (
-              <a
-                href={framework.github_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors"
-              >
-                <Github size={16} />
-                GitHub
-              </a>
+              <Button asChild variant="outline" size="sm">
+                <a
+                  href={framework.github_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Github size={14} />
+                  GitHub
+                </a>
+              </Button>
             )}
           </div>
         </section>
 
-        {/* Development Workflow - framework-specific */}
+        {/* Unified Overview: Workflow + What's Included */}
         <section className="mb-12">
-          <WorkflowTimeline frameworkSlug={slug} />
+          <FrameworkOverview framework={framework} />
         </section>
 
-        {/* Methodology & Autonomy badges (compact, below workflow) */}
-        {(framework.methodology || framework.autonomy_level) && (
-          <div className="flex flex-wrap gap-2 mb-12">
-            <MethodologyCard methodology={framework.methodology} variant="compact" />
-            <AutonomyCard autonomyLevel={framework.autonomy_level} variant="compact" />
-          </div>
-        )}
-
-        {/* Best For - Use cases badges */}
-        {framework.use_cases && framework.use_cases.length > 0 && (
-          <section className="mb-12">
-            <h2 className="text-lg font-semibold mb-4 text-zinc-200">Best For</h2>
-            <UseCasesBadges useCases={framework.use_cases} />
-          </section>
-        )}
-
-        {/* Features */}
-        {framework.features && framework.features.length > 0 && (
-          <section className="mb-12">
-            <h2 className="text-lg font-semibold mb-4 text-zinc-200">Features</h2>
-            <FeaturesList features={framework.features} />
-          </section>
-        )}
-
-        {/* What's Included */}
-        {(() => {
-          const skills = framework.skills || [];
-          const mcps = framework.mcps || [];
-          const subagents = framework.subagents || [];
-          const agentConfigs = AGENT_CONFIG_TYPES.filter((config) => framework[config.key]);
-
-          const hasContent = skills.length > 0 || mcps.length > 0 || subagents.length > 0 || agentConfigs.length > 0;
-          if (!hasContent) return null;
-
-          return (
-            <section className="mb-12">
-              <h2 className="text-lg font-semibold text-white mb-4">What&apos;s Included</h2>
-
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-5 font-mono text-sm">
-                {/* Root */}
-                <div className="text-zinc-400 mb-2">
-                  <span className="text-zinc-500">~/</span>
-                  <span className="text-white">.claude</span>
-                </div>
-
-                {/* Skills */}
-                {skills.length > 0 && (
-                  <div className="ml-4 mb-3">
-                    <div className="flex items-center gap-2 text-zinc-500 mb-1">
-                      <span>├──</span>
-                      <Zap size={14} className="text-cyan-400" />
-                      <span className="text-cyan-400">skills/</span>
-                      <span className="text-zinc-600">{skills.length}</span>
-                    </div>
-                    <div className="ml-8 text-[11px] leading-5">
-                      {skills.slice(0, 6).map((skill, idx) => {
-                        const isLast = idx === Math.min(skills.length, 6) - 1 && skills.length <= 6;
-                        return (
-                          <div key={skill.id} className="flex items-center">
-                            <span className="text-zinc-600 select-none">{isLast ? "└─" : "├─"}</span>
-                            <span className="ml-1.5 text-zinc-400">{skill.name}</span>
-                          </div>
-                        );
-                      })}
-                      {skills.length > 6 && (
-                        <div className="flex items-center">
-                          <span className="text-zinc-600 select-none">└─</span>
-                          <span className="ml-1.5 text-zinc-600">+{skills.length - 6} more</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* MCPs */}
-                {mcps.length > 0 && (
-                  <div className="ml-4 mb-3">
-                    <div className="flex items-center gap-2 text-zinc-500 mb-1">
-                      <span>{subagents.length > 0 || agentConfigs.length > 0 ? "├──" : "└──"}</span>
-                      <Server size={14} className="text-violet-400" />
-                      <span className="text-violet-400">mcp-servers/</span>
-                      <span className="text-zinc-600">{mcps.length}</span>
-                    </div>
-                    <div className="ml-8 text-[11px] leading-5">
-                      {mcps.slice(0, 6).map((mcp, idx) => {
-                        const isLast = idx === Math.min(mcps.length, 6) - 1 && mcps.length <= 6;
-                        return (
-                          <div key={mcp.id} className="flex items-center">
-                            <span className="text-zinc-600 select-none">{isLast ? "└─" : "├─"}</span>
-                            <span className="ml-1.5 text-zinc-400">{mcp.name}</span>
-                          </div>
-                        );
-                      })}
-                      {mcps.length > 6 && (
-                        <div className="flex items-center">
-                          <span className="text-zinc-600 select-none">└─</span>
-                          <span className="ml-1.5 text-zinc-600">+{mcps.length - 6} more</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Subagents */}
-                {subagents.length > 0 && (
-                  <div className="ml-4 mb-3">
-                    <div className="flex items-center gap-2 text-zinc-500 mb-1">
-                      <span>{agentConfigs.length > 0 ? "├──" : "└──"}</span>
-                      <Bot size={14} className="text-amber-400" />
-                      <span className="text-amber-400">agents/</span>
-                      <span className="text-zinc-600">{subagents.length}</span>
-                    </div>
-                    <div className="ml-8 text-[11px] leading-5">
-                      {subagents.slice(0, 6).map((agent, idx) => {
-                        const isLast = idx === Math.min(subagents.length, 6) - 1 && subagents.length <= 6;
-                        return (
-                          <div key={agent.id} className="flex items-center">
-                            <span className="text-zinc-600 select-none">{isLast ? "└─" : "├─"}</span>
-                            <span className="ml-1.5 text-zinc-400">{agent.name}</span>
-                          </div>
-                        );
-                      })}
-                      {subagents.length > 6 && (
-                        <div className="flex items-center">
-                          <span className="text-zinc-600 select-none">└─</span>
-                          <span className="ml-1.5 text-zinc-600">+{subagents.length - 6} more</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Config files */}
-                {agentConfigs.length > 0 && (
-                  <div className="ml-4">
-                    <div className="flex items-center gap-2 text-zinc-500 mb-1">
-                      <span>└──</span>
-                      <Settings size={14} className="text-emerald-400" />
-                      <span className="text-emerald-400">config/</span>
-                      <span className="text-zinc-600">{agentConfigs.length}</span>
-                    </div>
-                    <div className="ml-8 text-[11px] leading-5">
-                      {agentConfigs.map((config, idx) => {
-                        const isLast = idx === agentConfigs.length - 1;
-                        return (
-                          <div key={config.key} className="flex items-center">
-                            <span className="text-zinc-600 select-none">{isLast ? "└─" : "├─"}</span>
-                            <span className="ml-1.5 text-zinc-400">{config.name}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
-          );
-        })()}
-
-        {/* Footer links */}
-        <section className="border-t border-zinc-800 pt-8 pb-12">
-          <div className="flex flex-wrap items-center gap-6 text-sm text-zinc-500">
-            {framework.github_url && (
-              <a
-                href={`${framework.github_url}/issues`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-zinc-300 transition-colors"
-              >
-                Report an issue
-              </a>
-            )}
-            {framework.github_url && (
-              <a
-                href={`${framework.github_url}/discussions`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-zinc-300 transition-colors"
-              >
-                Discussions
-              </a>
-            )}
-            {framework.homepage && (
-              <a
-                href={framework.homepage}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-zinc-300 transition-colors"
-              >
-                Documentation
-              </a>
-            )}
-          </div>
-        </section>
       </div>
+
+      <SiteFooter />
     </div>
   );
 }

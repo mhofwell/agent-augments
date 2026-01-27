@@ -1,3 +1,6 @@
+// Re-export shared formatters from plugin-utils
+export { formatStars, formatRelativeTime } from "@/components/plugin/plugin-utils";
+
 export type ToolStyle = {
   bg: string;
   text: string;
@@ -15,13 +18,6 @@ export const toolColors: Record<string, ToolStyle> = {
 
 export function getToolStyle(tool: string | null | undefined): ToolStyle {
   return toolColors[tool || ""] || toolColors.bash;
-}
-
-export function formatStars(stars: number): string {
-  if (stars >= 1000) {
-    return `${(stars / 1000).toFixed(1).replace(/\.0$/, "")}k`;
-  }
-  return stars.toString();
 }
 
 // Verified organizations for badge display
@@ -42,19 +38,4 @@ export function extractAuthor(githubUrl: string | null): string | null {
   if (!githubUrl) return null;
   const match = githubUrl.match(/github\.com\/([^\/]+)/);
   return match ? match[1] : null;
-}
-
-export function formatRelativeTime(dateString: string | null): string {
-  if (!dateString) return "Unknown";
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-  return `${Math.floor(diffDays / 365)} years ago`;
 }

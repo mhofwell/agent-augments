@@ -33,7 +33,7 @@ const compositionConfig = {
   mcp: {
     icon: Server,
     label: "MCP server",
-    colorClass: "text-type-bundle",
+    colorClass: "text-type-command", // emerald - servers/tools are command-like
   },
 } as const;
 

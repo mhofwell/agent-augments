@@ -6,7 +6,10 @@ export {
   pluginTypeConfig,
   getPluginTypeConfig,
   formatNumber,
+  formatStars,
   formatDate,
+  formatRelativeTime,
   getInstallCommand,
   getMarketplaceCommand,
+  cleanDescription,
 } from "./plugin-utils";

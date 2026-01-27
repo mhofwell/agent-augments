@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Copy, Check, Star, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { ComponentLibrary } from "@/types/database";
+import { formatStars } from "@/components/plugin/plugin-utils";
 import { trackComponentInstall } from "@/hooks/useComponentLibraries";
+import type { ComponentLibrary } from "@/types/database";
 
 // Component library logo mapping (official integrations only)
 const COMPONENT_LOGOS: Record<string, string> = {
@@ -42,14 +43,6 @@ const TECH_ICONS: Record<TechStack, { icon: string; label: string }> = {
 interface ComponentCardProps {
   library: ComponentLibrary;
   onClick?: () => void;
-}
-
-function formatStars(stars: number | null): string {
-  if (!stars) return "0";
-  if (stars >= 1000) {
-    return `${(stars / 1000).toFixed(1)}k`;
-  }
-  return stars.toString();
 }
 
 export function ComponentCard({ library, onClick }: ComponentCardProps) {
@@ -123,14 +116,13 @@ export function ComponentCard({ library, onClick }: ComponentCardProps) {
 
 
       {/* Description */}
-      <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 mb-3 flex-1">
+      <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 mb-4">
         {library.description}
       </p>
 
-      {/* Built with tech stack */}
+      {/* Tech stack icons */}
       {techStack.length > 0 && (
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-xs text-muted-foreground">Built with</span>
+        <div className="flex items-center gap-2 py-3">
           {techStack.map((tech) => {
             const { icon, label } = TECH_ICONS[tech];
             return (
@@ -145,6 +137,9 @@ export function ComponentCard({ library, onClick }: ComponentCardProps) {
           })}
         </div>
       )}
+
+      {/* Spacer to push install command to bottom */}
+      <div className="flex-1" />
 
       {/* Install Command */}
       {primaryCommand && (

@@ -88,8 +88,6 @@ interface TerminalLine {
   visible: boolean;
 }
 
-const MAX_VISIBLE_LINES = 10;
-
 function InstallTerminal({
   framework,
   isActive,
@@ -203,7 +201,7 @@ function InstallTerminal({
 
 export function InstallCinemaHome() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying] = useState(true);
 
   const currentFramework = FRAMEWORKS[currentIndex];
 
@@ -470,7 +468,7 @@ export function InstallCinemaHome() {
       <footer className="relative z-10 px-6 py-8 border-t border-zinc-800/50">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
           <div className="flex items-center gap-4">
-            <span>Works with Claude Code, Cursor, Windsurf</span>
+            <span>Claude Code · Cursor · Windsurf</span>
           </div>
           <div className="flex items-center gap-6">
             <span>

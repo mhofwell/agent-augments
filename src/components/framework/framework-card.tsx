@@ -94,7 +94,6 @@ export function FrameworkCard({ framework, onClick, featured = false }: Framewor
             <AgentCompatibilityRow
               item={framework}
               size="sm"
-              showLabel
               className="mb-4"
             />
           );

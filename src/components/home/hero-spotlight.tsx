@@ -33,7 +33,7 @@ export function HeroSpotlight({ plugins, onPluginClick }: HeroSpotlightProps) {
       <div className="grid lg:grid-cols-2 gap-6 items-stretch">
         {/* Primary spotlight */}
         <div className="h-full">
-          <SpotlightCard plugin={primary} isPrimary onClick={() => onPluginClick(primary)} />
+          <SpotlightCard plugin={primary} onClick={() => onPluginClick(primary)} />
         </div>
 
         {/* Secondary spotlight */}
@@ -49,11 +49,10 @@ export function HeroSpotlight({ plugins, onPluginClick }: HeroSpotlightProps) {
 
 interface SpotlightCardProps {
   plugin: PluginWithMarketplace;
-  isPrimary?: boolean;
   onClick: () => void;
 }
 
-function SpotlightCard({ plugin, isPrimary = false, onClick }: SpotlightCardProps) {
+function SpotlightCard({ plugin, onClick }: SpotlightCardProps) {
   const [copied, setCopied] = useState(false);
   const typeConfig = getPluginTypeConfig(plugin.plugin_type as PluginType);
   const TypeIcon = typeConfig.icon;

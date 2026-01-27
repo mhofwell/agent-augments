@@ -217,11 +217,11 @@ export function PluginModal({
             </div>
           )}
 
-          {/* Works with Frameworks */}
+          {/* Frameworks */}
           {frameworks.length > 0 && (
             <div>
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                Works with
+                Frameworks
               </h3>
               <div className="flex flex-wrap gap-2">
                 {frameworks.map((fw) => (

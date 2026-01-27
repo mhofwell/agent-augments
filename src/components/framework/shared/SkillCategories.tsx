@@ -86,7 +86,7 @@ export function SkillCategories({ skills, className }: SkillCategoriesProps) {
 
   return (
     <div className={cn("space-y-6", className)}>
-      {categories.map((category, catIdx) => (
+      {categories.map((category) => (
         <div key={category.name}>
           {/* Category header */}
           {showCategoryHeaders && (

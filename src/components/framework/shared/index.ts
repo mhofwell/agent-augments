@@ -6,3 +6,4 @@ export { FeaturesList } from "./FeaturesList";
 export { SkillItem } from "./SkillItem";
 export { SkillCategories, categorizeSkills, type SkillCategory } from "./SkillCategories";
 export { WorkflowTimeline } from "./WorkflowTimeline";
+export { FrameworkOverview } from "./FrameworkOverview";

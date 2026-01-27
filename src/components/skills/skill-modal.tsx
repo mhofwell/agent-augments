@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check, Github, ExternalLink, BookOpen, Layers, Scale, User } from "lucide-react";
+import { Copy, Check, Github, ExternalLink, BookOpen, Layers, HelpCircle, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -12,14 +12,33 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
+import { PUBLISHER_LOGOS } from "./publisher-logos";
 import type { PublisherSkill, SkillPublisher } from "@/types/database";
 
-// Agent compatibility - Skills work with all agents
-const COMPATIBLE_AGENTS = [
-  { id: "claude-code", name: "Claude Code", color: "#FF8C00" },
-  { id: "cursor", name: "Cursor", color: "#3B82F6" },
-  { id: "windsurf", name: "Windsurf", color: "#10B981" },
-  { id: "codex", name: "Codex", color: "#FFFFFF" },
+type InstallScope = "user" | "project" | "local";
+
+const scopeOptions: { value: InstallScope; label: string; description: string }[] = [
+  {
+    value: "user",
+    label: "User (recommended)",
+    description: "Available in all your projects",
+  },
+  {
+    value: "project",
+    label: "Project",
+    description: "Shared with your team via project config",
+  },
+  {
+    value: "local",
+    label: "Local",
+    description: "This project only, not version controlled",
+  },
 ];
 
 interface SkillModalProps {
@@ -36,12 +55,19 @@ export function SkillModal({
   onOpenChange,
 }: SkillModalProps) {
   const [copied, setCopied] = useState(false);
+  const [selectedScope, setSelectedScope] = useState<InstallScope>("user");
+  const [helpOpen, setHelpOpen] = useState(false);
 
   if (!skill || !publisher) return null;
 
-  const installCommand = `npx add-skill ${publisher.github_org}/${publisher.github_repo}/${skill.slug}`;
+  const baseCommand = `npx add-skill ${publisher.github_org}/${publisher.github_repo}/${skill.slug}`;
+  const installCommand = `${baseCommand} --scope ${selectedScope}`;
   const githubUrl = `https://github.com/${publisher.github_org}/${publisher.github_repo}/tree/main/${skill.slug}`;
   const rawSkillUrl = `https://raw.githubusercontent.com/${publisher.github_org}/${publisher.github_repo}/main/${skill.slug}/SKILL.md`;
+
+  // Get publisher logo
+  const publisherSlug = publisher.slug || publisher.github_org.toLowerCase();
+  const publisherLogo = PUBLISHER_LOGOS[publisherSlug];
 
   const copyCommand = async () => {
     try {
@@ -70,133 +96,126 @@ export function SkillModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl bg-zinc-900 border-zinc-800 p-0 gap-0 max-h-[90vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="sm:max-w-2xl bg-card border-border p-0 gap-0 max-h-[90vh] overflow-y-auto overflow-x-hidden">
         {/* Header */}
         <DialogHeader className="p-6 pb-4">
           <div className="flex items-start gap-4">
+            {/* Publisher logo */}
             <div className="w-14 h-14 rounded-xl flex items-center justify-center border border-cyan-500/30 bg-cyan-500/10">
-              <BookOpen size={28} className="text-cyan-400" />
+              {publisherLogo ? (
+                <img
+                  src={publisherLogo}
+                  alt={publisher.name}
+                  className="w-8 h-8 object-contain"
+                />
+              ) : (
+                <BookOpen size={28} className="text-cyan-400" />
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <DialogTitle className="text-2xl font-bold break-words text-white">
+                <DialogTitle className="text-2xl font-bold break-words text-foreground">
                   {skill.name}
                 </DialogTitle>
                 {skill.version && (
-                  <Badge variant="outline" className="text-xs border-zinc-700 text-zinc-400">
+                  <Badge variant="outline" className="text-xs border-border text-muted-foreground">
                     v{skill.version}
                   </Badge>
                 )}
-                {skill.license && (
-                  <Badge variant="outline" className="text-xs border-zinc-700 text-zinc-400">
-                    <Scale size={10} className="mr-1" />
-                    {skill.license}
-                  </Badge>
-                )}
               </div>
-              <div className="flex items-center gap-2 mt-1 text-sm text-zinc-500">
-                <User size={14} />
-                <span>by {skill.author || publisher.name}</span>
+              <div className="mt-1 text-sm text-muted-foreground">
+                by {skill.author || publisher.name}
               </div>
             </div>
           </div>
         </DialogHeader>
 
-        <Separator className="bg-zinc-800" />
+        <Separator />
 
         {/* Content */}
         <div className="p-6 space-y-6 overflow-hidden">
-          {/* Description */}
-          <div>
-            <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">
-              Description
-            </h3>
-            <p className="text-zinc-300 leading-relaxed break-words">
-              {skill.description || "No description available"}
-            </p>
-          </div>
+          {/* Description - no header, just the text */}
+          <p className="text-muted-foreground leading-relaxed break-words">
+            {skill.description || "No description available"}
+          </p>
 
           {/* Stats */}
           {(skill.rule_count || skill.category_count) && (
             <div className="flex items-center gap-4">
               {skill.rule_count && skill.rule_count > 0 && (
-                <div className="flex items-center gap-2 text-sm text-zinc-400">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <BookOpen size={16} className="text-cyan-400" />
-                  <span className="text-white font-medium">{skill.rule_count}</span> rules
+                  <span className="text-foreground font-medium">{skill.rule_count}</span> rules
                 </div>
               )}
               {skill.category_count && skill.category_count > 0 && (
-                <div className="flex items-center gap-2 text-sm text-zinc-400">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Layers size={16} className="text-cyan-400" />
-                  <span className="text-white font-medium">{skill.category_count}</span> categories
+                  <span className="text-foreground font-medium">{skill.category_count}</span> categories
                 </div>
               )}
             </div>
           )}
 
-          {/* Categories */}
+          {/* Categories - no header */}
           {categories.length > 0 && (
-            <div>
-              <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">
-                Categories
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category, i) => (
-                  <Badge
-                    key={i}
-                    variant="outline"
-                    className="text-sm border-zinc-700 text-zinc-300 bg-zinc-800/50"
-                  >
-                    {typeof category === 'string' ? category : String(category)}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Agent Compatibility */}
-          <div>
-            <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">
-              Works With
-            </h3>
             <div className="flex flex-wrap gap-2">
-              {COMPATIBLE_AGENTS.map((agent) => (
+              {categories.map((category, i) => (
                 <Badge
-                  key={agent.id}
+                  key={i}
                   variant="outline"
-                  className="text-sm px-3 py-1"
-                  style={{
-                    borderColor: `${agent.color}50`,
-                    backgroundColor: `${agent.color}10`,
-                  }}
+                  className="text-sm border-border text-muted-foreground bg-secondary/50"
                 >
-                  <span
-                    className="inline-block w-2 h-2 rounded-full mr-2"
-                    style={{ backgroundColor: agent.color }}
-                  />
-                  {agent.name}
+                  {typeof category === 'string' ? category : String(category)}
                 </Badge>
               ))}
             </div>
-            <p className="text-xs text-zinc-500 mt-2">
-              Skills follow the Agent Skills specification and work with any compatible agent.
-            </p>
-          </div>
+          )}
 
-          {/* Install Command */}
-          <div>
-            <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">
+          {/* Installation with scope selection */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
               Installation
             </h3>
+
+            {/* Scope selection */}
+            <div className="space-y-2">
+              {scopeOptions.map((option) => (
+                <label
+                  key={option.value}
+                  className={cn(
+                    "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                    selectedScope === option.value
+                      ? "bg-cyan-500/5 border-cyan-500/50"
+                      : "bg-background border-border hover:border-border/80"
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="scope"
+                    value={option.value}
+                    checked={selectedScope === option.value}
+                    onChange={() => setSelectedScope(option.value)}
+                    className="mt-0.5 accent-cyan-500"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-foreground">{option.label}</div>
+                    <div className="text-xs text-muted-foreground">{option.description}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {/* Install command */}
             <div className="flex items-center gap-2 min-w-0">
-              <code className="flex-1 min-w-0 px-4 py-3 bg-black rounded-lg font-mono text-sm border border-zinc-800 overflow-x-auto whitespace-nowrap text-cyan-400">
+              <code className="flex-1 min-w-0 px-4 py-3 bg-background rounded-lg font-mono text-sm border border-border overflow-x-auto whitespace-nowrap text-cyan-400">
                 {installCommand}
               </code>
               <Button
                 variant="secondary"
                 size="icon"
                 onClick={copyCommand}
-                className="flex-shrink-0 bg-zinc-800 hover:bg-zinc-700 border-zinc-700"
+                className="flex-shrink-0"
               >
                 {copied ? (
                   <Check size={16} className="text-emerald-400" />
@@ -205,13 +224,45 @@ export function SkillModal({
                 )}
               </Button>
             </div>
+
+            {/* First time? Help section */}
+            <Collapsible open={helpOpen} onOpenChange={setHelpOpen}>
+              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <HelpCircle size={14} />
+                <span>First time installing skills?</span>
+                <ChevronDown
+                  size={14}
+                  className={cn("transition-transform", helpOpen && "rotate-180")}
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-3">
+                <div className="bg-background rounded-lg border border-border p-4 space-y-3 text-sm text-muted-foreground">
+                  <ol className="list-decimal list-inside space-y-2">
+                    <li>Open your terminal in any project directory</li>
+                    <li>Run the install command above</li>
+                    <li>The skill will be downloaded and configured automatically</li>
+                    <li>Skills work with any agent supporting the Agent Skills spec</li>
+                  </ol>
+                  <Separator />
+                  <a
+                    href="https://agentskills.org"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-cyan-400 hover:underline"
+                  >
+                    Learn more about Agent Skills
+                    <ExternalLink size={12} />
+                  </a>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">
             <Button
               variant="secondary"
-              className="flex-1 bg-zinc-800 hover:bg-zinc-700 border-zinc-700"
+              className="flex-1"
               asChild
             >
               <a href={githubUrl} target="_blank" rel="noopener noreferrer">
@@ -221,7 +272,7 @@ export function SkillModal({
             </Button>
             <Button
               variant="secondary"
-              className="flex-1 bg-zinc-800 hover:bg-zinc-700 border-zinc-700"
+              className="flex-1"
               asChild
             >
               <a href={rawSkillUrl} target="_blank" rel="noopener noreferrer">

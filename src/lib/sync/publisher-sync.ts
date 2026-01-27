@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { SkillPublisher, PublisherSkill, SkillTag } from "@/types/database";
+import type { SkillTag } from "@/types/database";
 
 const GITHUB_API_BASE = "https://api.github.com";
 const GITHUB_RAW_BASE = "https://raw.githubusercontent.com";
@@ -146,11 +146,6 @@ interface GitHubRepoStats {
   pushed_at: string;
 }
 
-interface GitHubContributor {
-  login: string;
-  avatar_url: string;
-}
-
 interface SkillFrontmatter {
   name: string;
   description: string;
@@ -277,7 +272,6 @@ function parseFrontmatter(content: string): { frontmatter: SkillFrontmatter; bod
   };
 
   const lines = yamlContent.split("\n");
-  let currentKey = "";
   let inMetadata = false;
   const metadata: Record<string, string> = {};
 
@@ -306,7 +300,6 @@ function parseFrontmatter(content: string): { frontmatter: SkillFrontmatter; bod
       const fieldMatch = line.match(/^(\w+[-\w]*):\s*(.*)$/);
       if (fieldMatch) {
         const [, key, value] = fieldMatch;
-        currentKey = key;
 
         // Remove quotes if present
         const cleanValue = value.replace(/^["']|["']$/g, "").trim();
