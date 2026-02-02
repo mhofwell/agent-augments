@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Sparkles, Bot, Command, Webhook, Server } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PluginComposition } from "@/types/database";
@@ -43,7 +44,7 @@ function pluralize(count: number, singular: string): string {
   return count === 1 ? singular : `${singular}s`;
 }
 
-export function CompositionBadges({ composition, className, expanded = false }: CompositionBadgesProps) {
+export const CompositionBadges = memo(function CompositionBadges({ composition, className, expanded = false }: CompositionBadgesProps) {
   if (!composition) return null;
 
   // Get non-zero composition items
@@ -96,4 +97,4 @@ export function CompositionBadges({ composition, className, expanded = false }: 
       })}
     </div>
   );
-}
+});

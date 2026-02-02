@@ -1,7 +1,7 @@
 "use client";
 
 import { Bookmark, BookmarkCheck, Copy, Check, Terminal, Star } from "lucide-react";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ interface PluginCardProps {
   onBookmarkToggle?: () => void;
 }
 
-export function PluginCard({
+export const PluginCard = memo(function PluginCard({
   plugin,
   compact = false,
   isNew = false,
@@ -186,4 +186,4 @@ export function PluginCard({
       </div>
     </div>
   );
-}
+});

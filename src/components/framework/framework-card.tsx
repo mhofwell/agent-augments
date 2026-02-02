@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import Link from "next/link";
 import { Copy, Check, Star, BadgeCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ interface FrameworkCardProps {
   featured?: boolean;
 }
 
-export function FrameworkCard({ framework, onClick, featured = false }: FrameworkCardProps) {
+export const FrameworkCard = memo(function FrameworkCard({ framework, onClick, featured = false }: FrameworkCardProps) {
   const [copied, setCopied] = useState(false);
   const author = extractAuthor(framework.github_url);
 
@@ -167,4 +167,4 @@ export function FrameworkCard({ framework, onClick, featured = false }: Framewor
       {wrappedContent}
     </Link>
   );
-}
+});

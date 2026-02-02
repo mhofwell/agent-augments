@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Copy, Check, Star, BadgeCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ interface PublisherCardProps {
   onClick?: () => void;
 }
 
-export function PublisherCard({ publisher, onClick }: PublisherCardProps) {
+export const PublisherCard = memo(function PublisherCard({ publisher, onClick }: PublisherCardProps) {
   const [copied, setCopied] = useState(false);
 
   const installCommand = `npx add-skill ${publisher.github_org}/${publisher.github_repo}`;
@@ -136,4 +136,4 @@ export function PublisherCard({ publisher, onClick }: PublisherCardProps) {
       </div>
     </div>
   );
-}
+});

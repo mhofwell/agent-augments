@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Copy, Check, Star, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatStars } from "@/components/plugin/plugin-utils";
@@ -42,7 +42,7 @@ interface ComponentCardProps {
   onClick?: () => void;
 }
 
-export function ComponentCard({ library, onClick }: ComponentCardProps) {
+export const ComponentCard = memo(function ComponentCard({ library, onClick }: ComponentCardProps) {
   const [copied, setCopied] = useState(false);
 
   // Use MCP install command if available, otherwise skill install command
@@ -165,4 +165,4 @@ export function ComponentCard({ library, onClick }: ComponentCardProps) {
       </div>
     </div>
   );
-}
+});
