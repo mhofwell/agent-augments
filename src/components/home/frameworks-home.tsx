@@ -5,11 +5,15 @@ import { Search, ArrowUpDown, ChevronDown, X } from "lucide-react";
 import { SiteHeader } from "@/components/layout";
 import { AgentCarousel } from "@/components/skills/agent-carousel";
 import { FrameworkCard } from "@/components/framework/framework-card";
-import { useFrameworks } from "@/hooks";
+import { FrameworkModal } from "@/components/framework/framework-modal";
+import { useFrameworks, useFrameworkBookmarks } from "@/hooks";
+import type { Framework } from "@/types/database";
 
 export function FrameworksHome() {
   const [search, setSearch] = useState("");
   const { frameworks, isLoading } = useFrameworks();
+  const { bookmarkedIds, toggleBookmark } = useFrameworkBookmarks();
+  const [selectedFramework, setSelectedFramework] = useState<Framework | null>(null);
 
   // Sort state
   type SortOption = "stars" | "name" | "updated";
@@ -74,7 +78,11 @@ export function FrameworksHome() {
 
           {/* Right column - Featured framework */}
           {featuredFramework ? (
-            <FrameworkCard framework={featuredFramework} featured />
+            <FrameworkCard
+              framework={featuredFramework}
+              featured
+              onClick={() => setSelectedFramework(featuredFramework)}
+            />
           ) : (
             <div className="rounded-xl border border-zinc-800 p-6 bg-zinc-900/50 animate-pulse">
               <div className="h-4 bg-zinc-800 rounded w-20 mb-4" />
@@ -160,7 +168,11 @@ export function FrameworksHome() {
           ) : (
             <div className="grid md:grid-cols-2 gap-4">
               {filteredFrameworks.map((framework) => (
-                <FrameworkCard key={framework.id} framework={framework} />
+                <FrameworkCard
+                  key={framework.id}
+                  framework={framework}
+                  onClick={() => setSelectedFramework(framework)}
+                />
               ))}
             </div>
           )}
@@ -173,6 +185,17 @@ export function FrameworksHome() {
           Curated with care. Submit a framework on GitHub.
         </div>
       </footer>
+
+      {/* Framework Detail Modal */}
+      <FrameworkModal
+        framework={selectedFramework}
+        open={!!selectedFramework}
+        onOpenChange={(open) => !open && setSelectedFramework(null)}
+        isBookmarked={selectedFramework ? bookmarkedIds.has(selectedFramework.id) : false}
+        onToggleBookmark={
+          selectedFramework ? () => toggleBookmark(selectedFramework.id) : undefined
+        }
+      />
     </div>
   );
 }

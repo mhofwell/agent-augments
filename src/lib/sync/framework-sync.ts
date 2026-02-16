@@ -1,18 +1,70 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { calculateCompletenessScore } from "@/lib/framework-completeness";
+import Anthropic from "@anthropic-ai/sdk";
+import type { Framework } from "@/types/database";
 
 const GITHUB_API_BASE = "https://api.github.com";
 const MIN_STARS = 200;
+const COMPLETENESS_THRESHOLD = 70; // Re-enrich frameworks below this score
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1000;
+const PROSE_ENRICHMENT_RATE_LIMIT_MS = 1000; // Rate limit for LLM calls
 
 // Curated frameworks with correct data (ensures these always exist with proper URLs)
 const KNOWN_FRAMEWORKS = [
   {
     slug: "gsd",
     name: "Get Shit Done",
-    description: "A Claude Code framework for getting shit done efficiently",
+    description: "A light-weight spec-driven development system that solves context rot in Claude Code",
     install_command: "npx get-shit-done-cc",
     install_tool: "npx",
     github_url: "https://github.com/glittercowboy/get-shit-done",
     color: "#10b981",
+  },
+  {
+    slug: "bmad",
+    name: "BMAD",
+    description: "AI-driven agile development framework with 21 specialized agents and 50+ guided workflows",
+    install_command: "npx bmad-method install",
+    install_tool: "npx",
+    github_url: "https://github.com/bmadcode/bmad-method",
+    color: "#8b5cf6",
+  },
+  {
+    slug: "claude-flow",
+    name: "Claude Flow",
+    description: "Multi-agent orchestration framework with 60+ specialized agents",
+    install_command: "npx claude-flow@v3alpha init",
+    install_tool: "npx",
+    github_url: "https://github.com/ruvnet/claude-flow",
+    color: "#06b6d4",
+  },
+  {
+    slug: "compound-engineering",
+    name: "Compound Engineering",
+    description: "Plugin-based methodology for compound engineering workflows at scale",
+    install_command: "/plugin marketplace add https://github.com/EveryInc/compound-engineering-plugin",
+    install_tool: "plugin",
+    github_url: "https://github.com/EveryInc/compound-engineering-plugin",
+    color: "#f59e0b",
+  },
+  {
+    slug: "moai",
+    name: "MOAI",
+    description: "Modular AI development kit with LSP integration and diagnostic tracking",
+    install_command: "curl -LsSf https://modu-ai.github.io/moai-adk/install.sh | sh",
+    install_tool: "bash",
+    github_url: "https://github.com/modu-ai/moai-adk",
+    color: "#ec4899",
+  },
+  {
+    slug: "superclaude-framework",
+    name: "SuperClaude",
+    description: "Enhanced Claude Code experience with advanced prompting and capabilities",
+    install_command: "npx superclaude install",
+    install_tool: "npx",
+    github_url: "https://github.com/SuperClaude-Org/SuperClaude_Framework",
+    color: "#eab308",
   },
 ];
 
@@ -64,6 +116,304 @@ export interface FrameworkSyncResult {
   errors: string[];
 }
 
+// Prose enrichment types
+interface ProseEnrichmentResult {
+  description: string;
+  how_it_works: string;
+}
+
+interface ProseEnrichmentError {
+  error: string;
+  timestamp: Date;
+}
+
+type ProseEnrichmentOutcome =
+  | { success: true; data: ProseEnrichmentResult }
+  | { success: false; error: ProseEnrichmentError };
+
+// Workflow extraction types
+export interface WorkflowStep {
+  id: string;
+  command: string;
+  humanDecision: string;
+  aiAction: string;
+  artifact?: string;
+}
+
+export interface FrameworkWorkflow {
+  philosophy: string;
+  steps: WorkflowStep[];
+}
+
+interface WorkflowExtractionResult {
+  workflow: FrameworkWorkflow;
+  confidence: "high" | "medium" | "low";
+}
+
+type WorkflowEnrichmentOutcome =
+  | { success: true; data: WorkflowExtractionResult }
+  | { success: false; error: ProseEnrichmentError };
+
+const PROSE_ENRICHMENT_PROMPT = `You are analyzing a GitHub repository for an AI coding framework/methodology.
+
+Based on the README content below, provide:
+1. A concise description (1-2 sentences, max 200 chars) summarizing what this framework does
+2. A "how it works" explanation (2-4 sentences, max 500 chars) describing the workflow/process
+
+README:
+---
+{README_CONTENT}
+---
+
+Respond in JSON format:
+{
+  "description": "...",
+  "how_it_works": "..."
+}
+
+Rules:
+- Be factual, not promotional
+- Focus on what makes this framework unique
+- For "how_it_works", describe the actual steps/flow a developer follows
+- If the README lacks sufficient detail, provide a reasonable summary based on available info
+- Never say "This framework..." - start with action verbs or the framework's core concept`;
+
+const WORKFLOW_EXTRACTION_PROMPT = `You are analyzing a GitHub repository for an AI coding framework/methodology.
+
+Extract the typical workflow/steps a developer follows when using this framework.
+
+README:
+---
+{README_CONTENT}
+---
+
+Framework: {FRAMEWORK_NAME}
+Install command: {INSTALL_COMMAND}
+
+Respond in JSON format:
+{
+  "philosophy": "One sentence describing the core approach (max 100 chars)",
+  "steps": [
+    {
+      "id": "unique-id",
+      "command": "The CLI command or action (e.g., 'npx my-tool init')",
+      "humanDecision": "What the human decides at this step",
+      "aiAction": "What the AI does after the human decision",
+      "artifact": "What gets created (optional, can be null)"
+    }
+  ],
+  "confidence": "high" | "medium" | "low"
+}
+
+Rules:
+- Extract 3-6 workflow steps maximum
+- Commands should be actual CLI syntax from the docs, not generic descriptions
+- "humanDecision" describes what choice the user makes
+- "aiAction" describes what the agent/framework does in response
+- "artifact" is optional - only include if something tangible is created (file, config, etc.)
+- Set confidence based on documentation clarity:
+  - "high": Clear step-by-step workflow documented
+  - "medium": Workflow can be inferred from examples/commands
+  - "low": Very sparse documentation, mostly guessing
+- If no discernible workflow exists, return: {"philosophy": null, "steps": [], "confidence": "low"}
+- Focus on the MAIN workflow, not every possible feature`;
+
+/**
+ * Enrich framework with LLM-generated prose (description and how_it_works)
+ */
+async function enrichFrameworkProse(
+  readme: string,
+  _repoName: string,
+  _githubDescription: string | null
+): Promise<ProseEnrichmentOutcome> {
+  // Skip if no API key configured
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return {
+      success: false,
+      error: {
+        error: "ANTHROPIC_API_KEY not configured",
+        timestamp: new Date(),
+      },
+    };
+  }
+
+  // Skip if README is too short
+  if (readme.length < 100) {
+    return {
+      success: false,
+      error: {
+        error: "README too short for analysis",
+        timestamp: new Date(),
+      },
+    };
+  }
+
+  try {
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+
+    // Truncate README to avoid token limits (first 8000 chars)
+    const truncatedReadme = readme.slice(0, 8000);
+
+    const message = await anthropic.messages.create({
+      model: "claude-3-5-haiku-20241022",
+      max_tokens: 500,
+      messages: [
+        {
+          role: "user",
+          content: PROSE_ENRICHMENT_PROMPT.replace("{README_CONTENT}", truncatedReadme),
+        },
+      ],
+    });
+
+    const content = message.content[0];
+    if (content.type !== "text") {
+      throw new Error("Unexpected response type");
+    }
+
+    // Parse JSON from response
+    const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("No JSON found in response");
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]) as ProseEnrichmentResult;
+
+    // Validate required fields
+    if (!parsed.description || !parsed.how_it_works) {
+      throw new Error("Missing required fields in response");
+    }
+
+    // Enforce length limits
+    return {
+      success: true,
+      data: {
+        description: parsed.description.slice(0, 500),
+        how_it_works: parsed.how_it_works.slice(0, 1000),
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        error: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date(),
+      },
+    };
+  }
+}
+
+/**
+ * Extract structured workflow from README using LLM
+ */
+export async function enrichFrameworkWorkflow(
+  readme: string,
+  frameworkName: string,
+  installCommand: string
+): Promise<WorkflowEnrichmentOutcome> {
+  // Skip if no API key configured
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return {
+      success: false,
+      error: {
+        error: "ANTHROPIC_API_KEY not configured",
+        timestamp: new Date(),
+      },
+    };
+  }
+
+  // Skip if README is too short
+  if (readme.length < 200) {
+    return {
+      success: false,
+      error: {
+        error: "README too short for workflow extraction",
+        timestamp: new Date(),
+      },
+    };
+  }
+
+  try {
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+
+    // Truncate README to avoid token limits (first 12000 chars for workflow)
+    const truncatedReadme = readme.slice(0, 12000);
+
+    const prompt = WORKFLOW_EXTRACTION_PROMPT
+      .replace("{README_CONTENT}", truncatedReadme)
+      .replace("{FRAMEWORK_NAME}", frameworkName)
+      .replace("{INSTALL_COMMAND}", installCommand);
+
+    const message = await anthropic.messages.create({
+      model: "claude-3-5-haiku-20241022",
+      max_tokens: 1000,
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    });
+
+    const content = message.content[0];
+    if (content.type !== "text") {
+      throw new Error("Unexpected response type");
+    }
+
+    // Parse JSON from response
+    const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("No JSON found in response");
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]) as {
+      philosophy: string | null;
+      steps: WorkflowStep[];
+      confidence: "high" | "medium" | "low";
+    };
+
+    // Validate - require philosophy and at least 2 steps for valid workflow
+    if (!parsed.philosophy || !parsed.steps || parsed.steps.length < 2) {
+      return {
+        success: false,
+        error: {
+          error: "No discernible workflow in documentation",
+          timestamp: new Date(),
+        },
+      };
+    }
+
+    // Validate each step has required fields
+    for (const step of parsed.steps) {
+      if (!step.id || !step.command || !step.humanDecision || !step.aiAction) {
+        throw new Error("Invalid step structure in response");
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        workflow: {
+          philosophy: parsed.philosophy.slice(0, 150),
+          steps: parsed.steps.slice(0, 6), // Max 6 steps
+        },
+        confidence: parsed.confidence,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        error: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date(),
+      },
+    };
+  }
+}
+
 function getHeaders(): HeadersInit {
   const headers: HeadersInit = {
     Accept: "application/vnd.github.v3+json",
@@ -75,6 +425,40 @@ function getHeaders(): HeadersInit {
   }
 
   return headers;
+}
+
+/**
+ * Helper to retry fetch with exponential backoff
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  retries = MAX_RETRIES
+): Promise<Response | null> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+
+      // Rate limiting - wait and retry
+      if (response.status === 403 || response.status === 429) {
+        const retryAfter = response.headers.get("Retry-After");
+        const waitTime = retryAfter
+          ? parseInt(retryAfter, 10) * 1000
+          : RETRY_DELAY_MS * Math.pow(2, attempt);
+        console.log(`[FrameworkSync] Rate limited, waiting ${waitTime}ms...`);
+        await new Promise((r) => setTimeout(r, waitTime));
+        continue;
+      }
+
+      return response;
+    } catch (error) {
+      console.log(`[FrameworkSync] Fetch error (attempt ${attempt + 1}/${retries}):`, error);
+      if (attempt < retries - 1) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * Math.pow(2, attempt)));
+      }
+    }
+  }
+  return null;
 }
 
 // Search queries to find Claude Code frameworks
@@ -104,113 +488,44 @@ function generateDisplayName(repoName: string): string {
     .trim();
 }
 
-// Fetch README to extract install command
+// Fetch README to extract install command (with retry)
 async function fetchReadme(owner: string, repo: string): Promise<string | null> {
   const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}/readme`;
 
-  try {
-    const response = await fetch(url, {
-      headers: {
-        ...getHeaders(),
-        Accept: "application/vnd.github.v3.raw",
-      },
-    });
+  const response = await fetchWithRetry(url, {
+    headers: {
+      ...getHeaders(),
+      Accept: "application/vnd.github.v3.raw",
+    },
+  });
 
-    if (!response.ok) return null;
-    return await response.text();
-  } catch {
-    return null;
-  }
+  if (!response || !response.ok) return null;
+  return await response.text();
 }
 
-// Fetch contributor count using Link header pagination trick
+// Fetch contributor count using Link header pagination trick (with retry)
 async function fetchContributorCount(owner: string, repo: string): Promise<number> {
   const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}/contributors?per_page=1&anon=0`;
 
-  try {
-    const response = await fetch(url, { headers: getHeaders() });
-    if (!response.ok) return 0;
+  const response = await fetchWithRetry(url, { headers: getHeaders() });
+  if (!response || !response.ok) return 0;
 
-    // Check Link header for last page number
-    const linkHeader = response.headers.get("Link");
-    if (linkHeader) {
-      const lastMatch = linkHeader.match(/&page=(\d+)>; rel="last"/);
-      if (lastMatch) {
-        return parseInt(lastMatch[1], 10);
-      }
-    }
-
-    // If no Link header, count the returned array
-    const data = await response.json();
-    return Array.isArray(data) ? data.length : 0;
-  } catch {
-    return 0;
-  }
-}
-
-// Extract features from README (## Features section)
-function extractFeaturesFromReadme(readme: string): string[] {
-  const features: string[] = [];
-  const lines = readme.split("\n");
-
-  let inFeaturesSection = false;
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    // Check for Features section header
-    if (/^#{1,3}\s*features?\b/i.test(trimmed)) {
-      inFeaturesSection = true;
-      continue;
-    }
-
-    // End of section when we hit another header
-    if (inFeaturesSection && /^#{1,3}\s+\w/.test(trimmed)) {
-      break;
-    }
-
-    // Extract bullet points
-    if (inFeaturesSection && /^[-*]\s+/.test(trimmed)) {
-      const feature = trimmed.replace(/^[-*]\s+/, "").replace(/\*\*/g, "").trim();
-      if (feature.length > 5 && feature.length < 200) {
-        features.push(feature);
-      }
+  // Check Link header for last page number
+  const linkHeader = response.headers.get("Link");
+  if (linkHeader) {
+    const lastMatch = linkHeader.match(/&page=(\d+)>; rel="last"/);
+    if (lastMatch) {
+      return parseInt(lastMatch[1], 10);
     }
   }
 
-  return features.slice(0, 10); // Limit to 10 features
+  // If no Link header, count the returned array
+  const data = await response.json();
+  return Array.isArray(data) ? data.length : 0;
 }
 
-// Extract use cases from README (## Best For, ## Use Cases, ## When to Use)
-function extractUseCasesFromReadme(readme: string): string[] {
-  const useCases: string[] = [];
-  const lines = readme.split("\n");
-
-  let inUseCasesSection = false;
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    // Check for use cases section headers
-    if (/^#{1,3}\s*(best\s+for|use\s*cases?|when\s+to\s+use|ideal\s+for)\b/i.test(trimmed)) {
-      inUseCasesSection = true;
-      continue;
-    }
-
-    // End of section when we hit another header
-    if (inUseCasesSection && /^#{1,3}\s+\w/.test(trimmed)) {
-      break;
-    }
-
-    // Extract bullet points
-    if (inUseCasesSection && /^[-*]\s+/.test(trimmed)) {
-      const useCase = trimmed.replace(/^[-*]\s+/, "").replace(/\*\*/g, "").trim();
-      if (useCase.length > 3 && useCase.length < 100) {
-        useCases.push(useCase);
-      }
-    }
-  }
-
-  return useCases.slice(0, 8); // Limit to 8 use cases
-}
+// NOTE: extractFeaturesFromReadme and extractUseCasesFromReadme have been removed
+// in favor of LLM-based prose enrichment (enrichFrameworkProse function above)
 
 // Extract skill details from SKILL.md files
 async function extractSkillDetails(owner: string, repo: string): Promise<SkillInfo[]> {
@@ -710,10 +1025,10 @@ export async function syncFrameworks(): Promise<FrameworkSyncResult> {
   console.log("[FrameworkSync] Starting framework discovery...");
   console.log(`[FrameworkSync] Minimum stars threshold: ${MIN_STARS}`);
 
-  // Get existing frameworks (including enrichment columns)
+  // Get existing frameworks (including enrichment columns and completeness score)
   const { data: existing, error: fetchError } = await supabase
     .from("frameworks")
-    .select("id, github_url, slug, stars, skills_count, mcps_count, methodology, autonomy_level, subagents_count, features, use_cases, contributors_count, last_commit_at, open_issues_count");
+    .select("id, github_url, slug, stars, skills_count, mcps_count, methodology, autonomy_level, subagents_count, how_it_works, prose_enriched_at, prose_enrichment_error, contributors_count, last_commit_at, open_issues_count, has_claude_md, completeness_score, name, description, install_command");
 
   if (fetchError) {
     result.errors.push(`Failed to fetch existing frameworks: ${fetchError.message}`);
@@ -728,28 +1043,120 @@ export async function syncFrameworks(): Promise<FrameworkSyncResult> {
   );
   const existingSlugs = new Set(existing?.map((f) => f.slug) || []);
 
-  // Sync known/curated frameworks first (ensures correct URLs)
+  // Sync known/curated frameworks first (ensures correct URLs and enrichment)
   console.log("[FrameworkSync] Syncing known frameworks...");
   for (const known of KNOWN_FRAMEWORKS) {
     const existingFramework = existingBySlug.get(known.slug);
 
     if (existingFramework) {
-      // Update if URL is different
-      if (existingFramework.github_url?.toLowerCase() !== known.github_url.toLowerCase()) {
-        const { error: updateError } = await supabase
-          .from("frameworks")
-          .update({
+      // Check if enrichment is needed
+      const currentCompleteness = calculateCompletenessScore(existingFramework as Framework);
+      // Force enrichment if: low completeness, zero score, OR missing prose enrichment
+      const needsEnrichment = currentCompleteness.score < COMPLETENESS_THRESHOLD ||
+        currentCompleteness.score === 0 ||
+        existingFramework.prose_enriched_at === null ||
+        existingFramework.prose_enrichment_error !== null;
+
+      // Update if URL is different OR needs enrichment
+      if (existingFramework.github_url?.toLowerCase() !== known.github_url.toLowerCase() || needsEnrichment) {
+        // Parse owner/repo from GitHub URL
+        const urlMatch = known.github_url.match(/github\.com\/([^/]+)\/([^/]+)/);
+        if (urlMatch && needsEnrichment) {
+          const [, owner, repo] = urlMatch;
+          console.log(`[FrameworkSync] Enriching known framework ${known.slug} (${currentCompleteness.score}% complete)`);
+
+          // Fetch enrichment data
+          const [readme, contributorsCount, agentConfigs] = await Promise.all([
+            fetchReadme(owner, repo),
+            fetchContributorCount(owner, repo),
+            detectAgentConfigs(owner, repo),
+          ]);
+
+          // Fetch repo stats
+          const repoResponse = await fetchWithRetry(
+            `${GITHUB_API_BASE}/repos/${owner}/${repo}`,
+            { headers: getHeaders() }
+          );
+          const repoData = repoResponse?.ok ? await repoResponse.json() : null;
+
+          const methodology = readme ? extractMethodology(readme) : null;
+          const autonomyLevel = readme ? estimateAutonomyLevel(readme, agentConfigs.subagentsCount) : null;
+
+          // Build update object
+          const updateData: Record<string, unknown> = {
             github_url: known.github_url,
             homepage: known.github_url,
             updated_at: new Date().toISOString(),
-          })
-          .eq("id", existingFramework.id);
+            skills_count: agentConfigs.skillsCount,
+            mcps_count: agentConfigs.mcpsCount,
+            subagents_count: agentConfigs.subagentsCount,
+            has_claude_md: agentConfigs.hasClaudeMd,
+            has_agents_md: agentConfigs.hasAgentsMd,
+            has_cursorrules: agentConfigs.hasCursorrules,
+            has_windsurfrules: agentConfigs.hasWindsurfrules,
+            methodology,
+            autonomy_level: autonomyLevel,
+            contributors_count: contributorsCount > 0 ? contributorsCount : null,
+          };
 
-        if (updateError) {
-          result.errors.push(`Failed to update ${known.slug}: ${updateError.message}`);
-        } else {
-          result.updated++;
-          console.log(`[FrameworkSync] Updated ${known.slug} URL → ${known.github_url}`);
+          // LLM prose enrichment (description and how_it_works)
+          if (readme && process.env.ANTHROPIC_API_KEY && !process.env.SKIP_PROSE_ENRICHMENT) {
+            await new Promise((r) => setTimeout(r, PROSE_ENRICHMENT_RATE_LIMIT_MS));
+            const proseResult = await enrichFrameworkProse(readme, known.name, known.description);
+            if (proseResult.success) {
+              updateData.description = proseResult.data.description;
+              updateData.how_it_works = proseResult.data.how_it_works;
+              updateData.prose_enriched_at = new Date().toISOString();
+              updateData.prose_enrichment_error = null;
+              console.log(`[FrameworkSync] Prose enriched ${known.slug}`);
+            } else {
+              updateData.prose_enrichment_error = proseResult.error.error;
+              console.log(`[FrameworkSync] Prose enrichment failed for ${known.slug}: ${proseResult.error.error}`);
+            }
+          }
+
+          if (repoData) {
+            updateData.stars = repoData.stargazers_count;
+            updateData.open_issues_count = repoData.open_issues_count;
+            updateData.last_commit_at = repoData.pushed_at;
+          }
+
+          // Calculate new completeness score
+          const updatedFramework = { ...existingFramework, ...updateData } as Framework;
+          const newCompleteness = calculateCompletenessScore(updatedFramework);
+          updateData.completeness_score = newCompleteness.score;
+
+          const { error: updateError } = await supabase
+            .from("frameworks")
+            .update(updateData)
+            .eq("id", existingFramework.id);
+
+          if (updateError) {
+            result.errors.push(`Failed to enrich ${known.slug}: ${updateError.message}`);
+          } else {
+            result.updated++;
+            console.log(`[FrameworkSync] Enriched ${known.slug}: ${currentCompleteness.score}% → ${newCompleteness.score}%`);
+          }
+
+          // Rate limit delay
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        } else if (existingFramework.github_url?.toLowerCase() !== known.github_url.toLowerCase()) {
+          // Just update URL
+          const { error: updateError } = await supabase
+            .from("frameworks")
+            .update({
+              github_url: known.github_url,
+              homepage: known.github_url,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", existingFramework.id);
+
+          if (updateError) {
+            result.errors.push(`Failed to update ${known.slug}: ${updateError.message}`);
+          } else {
+            result.updated++;
+            console.log(`[FrameworkSync] Updated ${known.slug} URL → ${known.github_url}`);
+          }
         }
       }
     } else {
@@ -799,20 +1206,34 @@ export async function syncFrameworks(): Promise<FrameworkSyncResult> {
 
     // If exists, update star count and enrichment columns if needed
     if (existingFramework) {
-      // Check if we need to update taxonomy or enrichment columns
+      // Calculate current completeness score to determine if enrichment is needed
+      const currentCompleteness = calculateCompletenessScore(existingFramework as Framework);
+      const needsCompletenessEnrichment = currentCompleteness.score < COMPLETENESS_THRESHOLD;
+
+      // Check if we need to update taxonomy or enrichment columns (null check or low completeness)
       const needsTaxonomyUpdate =
         existingFramework.skills_count === null ||
         existingFramework.mcps_count === null ||
         existingFramework.methodology === null ||
-        existingFramework.autonomy_level === null;
+        existingFramework.autonomy_level === null ||
+        needsCompletenessEnrichment;
+
+      const needsProseEnrichment =
+        existingFramework.prose_enriched_at === null ||
+        existingFramework.prose_enrichment_error !== null ||
+        needsCompletenessEnrichment;
 
       const needsEnrichmentUpdate =
-        existingFramework.features === null ||
-        existingFramework.use_cases === null ||
+        needsProseEnrichment ||
         existingFramework.contributors_count === null ||
-        existingFramework.last_commit_at === null;
+        existingFramework.last_commit_at === null ||
+        needsCompletenessEnrichment;
 
       const needsUpdate = existingFramework.stars !== repo.stargazers_count || needsTaxonomyUpdate || needsEnrichmentUpdate;
+
+      if (needsCompletenessEnrichment) {
+        console.log(`[FrameworkSync] ${repo.full_name} completeness ${currentCompleteness.score}% < ${COMPLETENESS_THRESHOLD}%, forcing enrichment`);
+      }
 
       if (needsUpdate) {
         // Build update object with star count and repo stats
@@ -825,38 +1246,53 @@ export async function syncFrameworks(): Promise<FrameworkSyncResult> {
 
         // If taxonomy or enrichment columns need updating, fetch fresh data
         if (needsTaxonomyUpdate || needsEnrichmentUpdate) {
+          // Always fetch all data when enriching to ensure completeness
           const [agentConfigs, readme, contributorsCount] = await Promise.all([
             detectAgentConfigs(repo.owner.login, repo.name),
             fetchReadme(repo.owner.login, repo.name),
-            needsEnrichmentUpdate ? fetchContributorCount(repo.owner.login, repo.name) : Promise.resolve(0),
+            fetchContributorCount(repo.owner.login, repo.name),
           ]);
 
-          // Taxonomy columns
-          if (existingFramework.skills_count === null) {
+          // Taxonomy columns - update if null OR if we're forcing enrichment
+          if (existingFramework.skills_count === null || needsCompletenessEnrichment) {
             updateData.skills_count = agentConfigs.skillsCount;
+            updateData.subagents_count = agentConfigs.subagentsCount;
+            updateData.has_claude_md = agentConfigs.hasClaudeMd;
+            updateData.has_agents_md = agentConfigs.hasAgentsMd;
+            updateData.has_cursorrules = agentConfigs.hasCursorrules;
+            updateData.has_windsurfrules = agentConfigs.hasWindsurfrules;
           }
-          if (existingFramework.mcps_count === null) {
+          if (existingFramework.mcps_count === null || needsCompletenessEnrichment) {
             updateData.mcps_count = agentConfigs.mcpsCount;
           }
-          if (existingFramework.methodology === null && readme) {
+          if ((existingFramework.methodology === null || needsCompletenessEnrichment) && readme) {
             updateData.methodology = extractMethodology(readme);
           }
-          if (existingFramework.autonomy_level === null && readme) {
+          if ((existingFramework.autonomy_level === null || needsCompletenessEnrichment) && readme) {
             updateData.autonomy_level = estimateAutonomyLevel(readme, agentConfigs.subagentsCount);
           }
 
-          // Enrichment columns
-          if (existingFramework.features === null && readme) {
-            const features = extractFeaturesFromReadme(readme);
-            updateData.features = features.length > 0 ? features : null;
+          // Prose enrichment - update if null OR if we're forcing enrichment
+          if (needsProseEnrichment && readme && process.env.ANTHROPIC_API_KEY && !process.env.SKIP_PROSE_ENRICHMENT) {
+            await new Promise((r) => setTimeout(r, PROSE_ENRICHMENT_RATE_LIMIT_MS));
+            const proseResult = await enrichFrameworkProse(readme, repo.name, repo.description);
+            if (proseResult.success) {
+              updateData.description = proseResult.data.description;
+              updateData.how_it_works = proseResult.data.how_it_works;
+              updateData.prose_enriched_at = new Date().toISOString();
+              updateData.prose_enrichment_error = null;
+            } else {
+              updateData.prose_enrichment_error = proseResult.error.error;
+            }
           }
-          if (existingFramework.use_cases === null && readme) {
-            const useCases = extractUseCasesFromReadme(readme);
-            updateData.use_cases = useCases.length > 0 ? useCases : null;
-          }
-          if (existingFramework.contributors_count === null && contributorsCount > 0) {
+          if ((existingFramework.contributors_count === null || needsCompletenessEnrichment) && contributorsCount > 0) {
             updateData.contributors_count = contributorsCount;
           }
+
+          // Calculate new completeness score with updated data
+          const updatedFramework = { ...existingFramework, ...updateData } as Framework;
+          const newCompleteness = calculateCompletenessScore(updatedFramework);
+          updateData.completeness_score = newCompleteness.score;
 
           // Extract and insert component details if framework has skills/mcps/subagents
           if (agentConfigs.skillsCount > 0 || agentConfigs.mcpsCount > 0 || agentConfigs.subagentsCount > 0) {
@@ -968,45 +1404,70 @@ export async function syncFrameworks(): Promise<FrameworkSyncResult> {
 
     const isPlugin = isClaudePluginInstall(installCommand);
 
-    // Extract methodology, autonomy level, features, and use cases from README
+    // Extract methodology and autonomy level from README
     const methodology = readme ? extractMethodology(readme) : null;
     const autonomyLevel = readme
       ? estimateAutonomyLevel(readme, agentConfigs.subagentsCount)
       : null;
-    const features = readme ? extractFeaturesFromReadme(readme) : [];
-    const useCases = readme ? extractUseCasesFromReadme(readme) : [];
 
-    // Insert new framework with enrichment data
+    // LLM prose enrichment for new frameworks
+    let proseDescription = repo.description || `Claude Code framework with ${repo.stargazers_count} stars`;
+    let howItWorks: string | null = null;
+    let proseEnrichedAt: string | null = null;
+    let proseEnrichmentError: string | null = null;
+
+    if (readme && process.env.ANTHROPIC_API_KEY && !process.env.SKIP_PROSE_ENRICHMENT) {
+      await new Promise((r) => setTimeout(r, PROSE_ENRICHMENT_RATE_LIMIT_MS));
+      const proseResult = await enrichFrameworkProse(readme, repo.name, repo.description);
+      if (proseResult.success) {
+        proseDescription = proseResult.data.description;
+        howItWorks = proseResult.data.how_it_works;
+        proseEnrichedAt = new Date().toISOString();
+      } else {
+        proseEnrichmentError = proseResult.error.error;
+      }
+    }
+
+    // Build framework data for insert
+    const frameworkData = {
+      slug,
+      name: generateDisplayName(repo.name),
+      description: proseDescription,
+      install_command: installCommand,
+      install_tool: installTool,
+      github_url: repo.html_url,
+      homepage: repo.homepage || repo.html_url,
+      color: getFrameworkColor(sortOrder),
+      stars: repo.stargazers_count,
+      subagents_count: agentConfigs.subagentsCount,
+      skills_count: agentConfigs.skillsCount,
+      mcps_count: agentConfigs.mcpsCount,
+      methodology,
+      autonomy_level: autonomyLevel,
+      has_claude_md: agentConfigs.hasClaudeMd,
+      has_agents_md: agentConfigs.hasAgentsMd,
+      has_cursorrules: agentConfigs.hasCursorrules,
+      has_windsurfrules: agentConfigs.hasWindsurfrules,
+      is_claude_plugin: isPlugin,
+      is_active: true,
+      sort_order: sortOrder,
+      how_it_works: howItWorks,
+      prose_enriched_at: proseEnrichedAt,
+      prose_enrichment_error: proseEnrichmentError,
+      last_commit_at: repo.pushed_at,
+      contributors_count: contributorsCount > 0 ? contributorsCount : null,
+      open_issues_count: repo.open_issues_count,
+    };
+
+    // Calculate completeness score for new framework
+    const completeness = calculateCompletenessScore(frameworkData as Framework);
+
+    // Insert new framework with enrichment data and completeness score
     const { data: insertedFramework, error: insertError } = await supabase
       .from("frameworks")
       .insert({
-        slug,
-        name: generateDisplayName(repo.name),
-        description: repo.description || `Claude Code framework with ${repo.stargazers_count} stars`,
-        install_command: installCommand,
-        install_tool: installTool,
-        github_url: repo.html_url,
-        homepage: repo.homepage || repo.html_url,
-        color: getFrameworkColor(sortOrder),
-        stars: repo.stargazers_count,
-        subagents_count: agentConfigs.subagentsCount,
-        skills_count: agentConfigs.skillsCount,
-        mcps_count: agentConfigs.mcpsCount,
-        methodology,
-        autonomy_level: autonomyLevel,
-        has_claude_md: agentConfigs.hasClaudeMd,
-        has_agents_md: agentConfigs.hasAgentsMd,
-        has_cursorrules: agentConfigs.hasCursorrules,
-        has_windsurfrules: agentConfigs.hasWindsurfrules,
-        is_claude_plugin: isPlugin,
-        is_active: true,
-        sort_order: sortOrder,
-        // New enrichment columns
-        features: features.length > 0 ? features : null,
-        use_cases: useCases.length > 0 ? useCases : null,
-        last_commit_at: repo.pushed_at,
-        contributors_count: contributorsCount > 0 ? contributorsCount : null,
-        open_issues_count: repo.open_issues_count,
+        ...frameworkData,
+        completeness_score: completeness.score,
       })
       .select("id")
       .single();
@@ -1021,17 +1482,23 @@ export async function syncFrameworks(): Promise<FrameworkSyncResult> {
         id: insertedFramework?.id || "",
         github_url: repoUrl,
         slug,
+        name: frameworkData.name,
+        description: frameworkData.description,
+        install_command: frameworkData.install_command,
         stars: repo.stargazers_count,
         skills_count: agentConfigs.skillsCount,
         mcps_count: agentConfigs.mcpsCount,
         methodology,
         autonomy_level: autonomyLevel,
         subagents_count: agentConfigs.subagentsCount,
-        features: features.length > 0 ? features : null,
-        use_cases: useCases.length > 0 ? useCases : null,
+        how_it_works: howItWorks,
+        prose_enriched_at: proseEnrichedAt,
+        prose_enrichment_error: proseEnrichmentError,
         contributors_count: contributorsCount > 0 ? contributorsCount : null,
         last_commit_at: repo.pushed_at,
         open_issues_count: repo.open_issues_count,
+        has_claude_md: agentConfigs.hasClaudeMd,
+        completeness_score: completeness.score,
       });
       sortOrder++;
 
@@ -1095,6 +1562,7 @@ export async function syncFrameworks(): Promise<FrameworkSyncResult> {
       }
 
       const configInfo = [
+        `${completeness.score}% complete`,
         agentConfigs.hasClaudeMd && "CLAUDE.md",
         agentConfigs.hasAgentsMd && "AGENTS.md",
         agentConfigs.hasCursorrules && ".cursorrules",
@@ -1102,13 +1570,12 @@ export async function syncFrameworks(): Promise<FrameworkSyncResult> {
         agentConfigs.subagentsCount > 0 && `${agentConfigs.subagentsCount} subagents`,
         agentConfigs.skillsCount > 0 && `${agentConfigs.skillsCount} skills`,
         agentConfigs.mcpsCount > 0 && `${agentConfigs.mcpsCount} MCPs`,
-        features.length > 0 && `${features.length} features`,
-        useCases.length > 0 && `${useCases.length} use cases`,
+        proseEnrichedAt && "prose enriched",
         contributorsCount > 0 && `${contributorsCount} contributors`,
         methodology && methodology,
         autonomyLevel && `${autonomyLevel} autonomy`,
       ].filter(Boolean).join(", ");
-      console.log(`[FrameworkSync] Added ${repo.full_name} (${repo.stargazers_count}★${configInfo ? `, ${configInfo}` : ""})`);
+      console.log(`[FrameworkSync] Added ${repo.full_name} (${repo.stargazers_count}★, ${configInfo})`);
     }
 
     // Rate limit delay

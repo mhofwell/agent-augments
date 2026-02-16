@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Copy, Check, Github, ExternalLink, Terminal, Star, Bookmark } from "lucide-react";
+import { Copy, Check, Github, ExternalLink, Terminal, Star, Bookmark, BadgeCheck, Clock, Zap, Bot, Plug } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -12,16 +12,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { getToolStyle, formatStars } from "./framework-utils";
-import {
-  AgentCompatibilityRow,
-  MethodologyCard,
-  AutonomyCard,
-  UseCasesBadges,
-  FeaturesList,
-} from "./shared";
+import { getToolStyle, formatStars, formatRelativeTime, isVerified, extractAuthor } from "./framework-utils";
 import { usePluginFrameworks } from "@/hooks/usePluginFrameworks";
+import { useFrameworkComponents } from "@/hooks/useFrameworkComponents";
 import { getPluginTypeConfig, formatNumber, cleanDescription } from "@/components/plugin/plugin-utils";
 import type { Framework, PluginWithMarketplace, PluginType } from "@/types/database";
 
@@ -45,6 +40,9 @@ export function FrameworkModal({
   const [copied, setCopied] = useState(false);
   const [plugins, setPlugins] = useState<PluginWithMarketplace[]>([]);
   const { getPluginsForFramework } = usePluginFrameworks();
+  const { components, isLoading: componentsLoading } = useFrameworkComponents(
+    open && framework?.slug ? framework.slug : null
+  );
 
   // Fetch plugins when modal opens with a framework
   useEffect(() => {
@@ -56,6 +54,7 @@ export function FrameworkModal({
   if (!framework) return null;
 
   const toolStyle = getToolStyle(framework.install_tool);
+  const author = extractAuthor(framework.github_url);
 
   const copyCommand = async () => {
     try {
@@ -70,70 +69,78 @@ export function FrameworkModal({
     }
   };
 
+  const skillCount = components?.skills.length ?? 0;
+  const agentCount = components?.subagents.length ?? 0;
+  const mcpCount = components?.mcps.length ?? 0;
+  const hasComponents = skillCount + agentCount + mcpCount > 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl bg-card border-border p-0 gap-0 max-h-[90vh] overflow-y-auto overflow-x-hidden">
         {/* Header */}
         <DialogHeader className="p-6 pb-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div
-                className="w-14 h-14 rounded-xl flex items-center justify-center border border-border flex-shrink-0"
-                style={{ backgroundColor: `${framework.color}20`, borderColor: `${framework.color}50` }}
-              >
-                <Terminal size={28} style={{ color: framework.color || undefined }} />
+          <div className="flex items-start gap-4">
+            <div
+              className="w-14 h-14 rounded-xl flex items-center justify-center border border-border flex-shrink-0"
+              style={{ backgroundColor: `${framework.color}20`, borderColor: `${framework.color}50` }}
+            >
+              <Terminal size={28} style={{ color: framework.color || undefined }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <DialogTitle className="text-2xl font-bold break-words">
+                  {framework.name}
+                </DialogTitle>
+                {framework.install_tool && (
+                  <Badge
+                    variant="outline"
+                    className={cn("text-xs uppercase flex-shrink-0", toolStyle.bg, toolStyle.text, toolStyle.border)}
+                  >
+                    {framework.install_tool}
+                  </Badge>
+                )}
+                {framework.stars && framework.stars > 0 && (
+                  <span className="flex items-center gap-1 text-sm text-muted-foreground flex-shrink-0">
+                    <Star size={14} className="text-amber-400 fill-amber-400" />
+                    {formatStars(framework.stars)}
+                  </span>
+                )}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <DialogTitle className="text-2xl font-bold break-words">
-                    {framework.name}
-                  </DialogTitle>
-                  {framework.install_tool && (
-                    <Badge
-                      variant="outline"
-                      className={cn("text-xs uppercase flex-shrink-0", toolStyle.bg, toolStyle.text, toolStyle.border)}
-                    >
-                      {framework.install_tool}
-                    </Badge>
-                  )}
-                  {framework.stars && framework.stars > 0 && (
-                    <span className="flex items-center gap-1 text-sm text-muted-foreground flex-shrink-0">
-                      <Star size={14} className="text-amber-400 fill-amber-400" />
-                      {formatStars(framework.stars)}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-3 mt-1">
-                  <p className="text-muted-foreground text-sm">
-                    Development Framework
-                  </p>
-                  {onToggleBookmark && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={onToggleBookmark}
-                      className="h-7 px-2"
-                    >
-                      <Bookmark
-                        size={14}
-                        className={cn(
-                          "mr-1",
-                          isBookmarked ? "fill-primary text-primary" : "text-muted-foreground"
-                        )}
-                      />
-                      {isBookmarked ? "Saved" : "Save"}
-                    </Button>
-                  )}
-                </div>
+              <div className="flex items-center gap-3 mt-1 flex-wrap">
+                {author && (
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <span>by</span>
+                    <span className="text-foreground/70">{author}</span>
+                    {isVerified(author) && (
+                      <BadgeCheck size={14} className="text-yellow-500 fill-yellow-500/20" />
+                    )}
+                  </div>
+                )}
+                {framework.last_commit_at && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock size={12} />
+                    <span>{formatRelativeTime(framework.last_commit_at)}</span>
+                  </div>
+                )}
+                {onToggleBookmark && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onToggleBookmark}
+                    className="h-7 px-2"
+                  >
+                    <Bookmark
+                      size={14}
+                      className={cn(
+                        "mr-1",
+                        isBookmarked ? "fill-primary text-primary" : "text-muted-foreground"
+                      )}
+                    />
+                    {isBookmarked ? "Saved" : "Save"}
+                  </Button>
+                )}
               </div>
             </div>
-
-            {/* Agent compatibility icons */}
-            <AgentCompatibilityRow
-              item={framework}
-              size="md"
-              className="flex-shrink-0"
-            />
           </div>
         </DialogHeader>
 
@@ -145,34 +152,6 @@ export function FrameworkModal({
           <p className="text-muted-foreground leading-relaxed break-words">
             {framework.description || "No description available"}
           </p>
-
-          {/* Highlights - Methodology & Autonomy */}
-          {(framework.methodology || framework.autonomy_level) && (
-            <div className="flex flex-wrap gap-2">
-              <MethodologyCard methodology={framework.methodology} variant="compact" />
-              <AutonomyCard autonomyLevel={framework.autonomy_level} variant="compact" />
-            </div>
-          )}
-
-          {/* Best For - Use Cases */}
-          {framework.use_cases && framework.use_cases.length > 0 && (
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                Best For
-              </h3>
-              <UseCasesBadges useCases={framework.use_cases} variant="compact" maxItems={5} />
-            </div>
-          )}
-
-          {/* Features */}
-          {framework.features && framework.features.length > 0 && (
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                Features
-              </h3>
-              <FeaturesList features={framework.features} variant="compact" maxItems={4} />
-            </div>
-          )}
 
           {/* Install Command */}
           <div className="space-y-3">
@@ -217,6 +196,85 @@ export function FrameworkModal({
               </Button>
             )}
           </div>
+
+          {/* What's Included */}
+          {componentsLoading && (
+            <div className="space-y-3">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-full" />
+            </div>
+          )}
+
+          {!componentsLoading && hasComponents && (
+            <div className="overflow-hidden w-full">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
+                What&apos;s Included
+              </h3>
+              <div className="space-y-4">
+                {/* Skills */}
+                {skillCount > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+                      <Zap size={12} className="text-cyan-400" />
+                      <span>Skills ({skillCount})</span>
+                    </div>
+                    <div className="space-y-1 pl-5">
+                      {components!.skills.map((skill) => (
+                        <div key={skill.id} className="flex items-baseline gap-2 text-sm">
+                          <span className="font-mono text-cyan-400 shrink-0">/{skill.slug}</span>
+                          {skill.description && (
+                            <span className="text-muted-foreground text-xs truncate">&mdash; {skill.description}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Agents */}
+                {agentCount > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+                      <Bot size={12} className="text-violet-400" />
+                      <span>Agents ({agentCount})</span>
+                    </div>
+                    <div className="space-y-1 pl-5">
+                      {components!.subagents.map((agent) => (
+                        <div key={agent.id} className="flex items-baseline gap-2 text-sm">
+                          <span className="font-mono text-violet-400 shrink-0">{agent.slug}</span>
+                          {agent.description && (
+                            <span className="text-muted-foreground text-xs truncate">&mdash; {agent.description}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* MCPs */}
+                {mcpCount > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+                      <Plug size={12} className="text-emerald-400" />
+                      <span>MCPs ({mcpCount})</span>
+                    </div>
+                    <div className="space-y-1 pl-5">
+                      {components!.mcps.map((mcp) => (
+                        <div key={mcp.id} className="flex items-baseline gap-2 text-sm">
+                          <span className="font-mono text-emerald-400 shrink-0">{mcp.slug}</span>
+                          {mcp.description && (
+                            <span className="text-muted-foreground text-xs truncate">&mdash; {mcp.description}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Compatible Plugins */}
           {plugins.length > 0 && (

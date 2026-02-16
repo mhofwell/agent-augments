@@ -76,16 +76,17 @@ export type Database = {
         Row: {
           autonomy_level: string | null
           color: string | null
+          completeness_score: number | null
           contributors_count: number | null
           created_at: string | null
           description: string | null
-          features: string[] | null
           github_url: string | null
           has_agents_md: boolean | null
           has_claude_md: boolean | null
           has_cursorrules: boolean | null
           has_windsurfrules: boolean | null
           homepage: string | null
+          how_it_works: string | null
           id: string
           install_command: string
           install_tool: string | null
@@ -97,27 +98,32 @@ export type Database = {
           name: string
           open_issues_count: number | null
           prerequisites: string[] | null
+          prose_enriched_at: string | null
+          prose_enrichment_error: string | null
           skills_count: number | null
           slug: string
           sort_order: number | null
           stars: number | null
           subagents_count: number | null
           updated_at: string | null
-          use_cases: string[] | null
+          workflow_enriched_at: string | null
+          workflow_enrichment_error: string | null
+          workflow_steps: Json | null
         }
         Insert: {
           autonomy_level?: string | null
           color?: string | null
+          completeness_score?: number | null
           contributors_count?: number | null
           created_at?: string | null
           description?: string | null
-          features?: string[] | null
           github_url?: string | null
           has_agents_md?: boolean | null
           has_claude_md?: boolean | null
           has_cursorrules?: boolean | null
           has_windsurfrules?: boolean | null
           homepage?: string | null
+          how_it_works?: string | null
           id?: string
           install_command: string
           install_tool?: string | null
@@ -129,27 +135,32 @@ export type Database = {
           name: string
           open_issues_count?: number | null
           prerequisites?: string[] | null
+          prose_enriched_at?: string | null
+          prose_enrichment_error?: string | null
           skills_count?: number | null
           slug: string
           sort_order?: number | null
           stars?: number | null
           subagents_count?: number | null
           updated_at?: string | null
-          use_cases?: string[] | null
+          workflow_enriched_at?: string | null
+          workflow_enrichment_error?: string | null
+          workflow_steps?: Json | null
         }
         Update: {
           autonomy_level?: string | null
           color?: string | null
+          completeness_score?: number | null
           contributors_count?: number | null
           created_at?: string | null
           description?: string | null
-          features?: string[] | null
           github_url?: string | null
           has_agents_md?: boolean | null
           has_claude_md?: boolean | null
           has_cursorrules?: boolean | null
           has_windsurfrules?: boolean | null
           homepage?: string | null
+          how_it_works?: string | null
           id?: string
           install_command?: string
           install_tool?: string | null
@@ -161,13 +172,17 @@ export type Database = {
           name?: string
           open_issues_count?: number | null
           prerequisites?: string[] | null
+          prose_enriched_at?: string | null
+          prose_enrichment_error?: string | null
           skills_count?: number | null
           slug?: string
           sort_order?: number | null
           stars?: number | null
           subagents_count?: number | null
           updated_at?: string | null
-          use_cases?: string[] | null
+          workflow_enriched_at?: string | null
+          workflow_enrichment_error?: string | null
+          workflow_steps?: Json | null
         }
         Relationships: []
       }

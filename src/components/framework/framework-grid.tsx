@@ -10,7 +10,7 @@ interface FrameworkGridProps {
   isLoading?: boolean;
   emptyMessage?: string;
   emptyDescription?: string;
-  onFrameworkClick?: (framework: Framework) => void;
+  onFrameworkClick: (framework: Framework) => void;
 }
 
 export function FrameworkGrid({
@@ -50,7 +50,7 @@ export function FrameworkGrid({
         <FrameworkCard
           key={framework.id}
           framework={framework}
-          onClick={() => onFrameworkClick?.(framework)}
+          onClick={() => onFrameworkClick(framework)}
         />
       ))}
     </div>
@@ -70,13 +70,7 @@ function FrameworkCardSkeleton() {
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-3/4" />
       </div>
-      <div className="flex gap-1.5 mb-4">
-        <Skeleton className="h-5 w-20 rounded-full" />
-      </div>
-      <div className="flex items-center gap-2">
-        <Skeleton className="h-9 flex-1 rounded-lg" />
-        <Skeleton className="h-8 w-8 rounded-md" />
-      </div>
+      <Skeleton className="h-4 w-24" />
     </div>
   );
 }

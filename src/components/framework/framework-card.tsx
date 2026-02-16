@@ -1,38 +1,18 @@
 "use client";
 
-import { memo, useState } from "react";
-import Link from "next/link";
-import { Copy, Check, Star, BadgeCheck, Sparkles } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { isVerified, extractAuthor, formatStars } from "./framework-utils";
-import { AgentCompatibilityRow } from "./shared";
+import { memo } from "react";
+import { Star, BadgeCheck, Sparkles, Clock } from "lucide-react";
+import { isVerified, extractAuthor, formatStars, formatRelativeTime } from "./framework-utils";
 import type { Framework } from "@/types/database";
 
 interface FrameworkCardProps {
   framework: Framework;
-  onClick?: () => void;
+  onClick: () => void;
   featured?: boolean;
 }
 
 export const FrameworkCard = memo(function FrameworkCard({ framework, onClick, featured = false }: FrameworkCardProps) {
-  const [copied, setCopied] = useState(false);
   const author = extractAuthor(framework.github_url);
-
-  const copyCommand = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (framework.install_command) {
-      try {
-        await navigator.clipboard.writeText(framework.install_command);
-        setCopied(true);
-        toast.success("Install command copied to clipboard");
-        setTimeout(() => setCopied(false), 2000);
-      } catch {
-        toast.error("Failed to copy to clipboard");
-      }
-    }
-  };
 
   const content = (
     <>
@@ -43,12 +23,14 @@ export const FrameworkCard = memo(function FrameworkCard({ framework, onClick, f
             <Sparkles size={14} className="text-lime-400 fill-lime-400/30" />
             <span className="uppercase tracking-wide font-medium text-lime-400">Featured</span>
           </div>
-          {framework.stars && framework.stars > 0 && (
-            <div className="flex items-center gap-1 text-amber-400/80 text-sm">
-              <Star size={14} className="fill-amber-400/80" />
-              <span>{formatStars(framework.stars)}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-3 text-sm">
+            {framework.stars && framework.stars > 0 && (
+              <div className="flex items-center gap-1 text-amber-400/80">
+                <Star size={14} className="fill-amber-400/80" />
+                <span>{formatStars(framework.stars)}</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -57,10 +39,14 @@ export const FrameworkCard = memo(function FrameworkCard({ framework, onClick, f
         <h3 className={`font-semibold text-foreground group-hover:text-lime-400 transition-colors ${featured ? "text-xl" : "text-lg"}`}>
           {framework.name}
         </h3>
-        {!featured && framework.stars && framework.stars > 0 && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-            <Star size={12} className="text-amber-400 fill-amber-400" />
-            <span>{formatStars(framework.stars)}</span>
+        {!featured && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+            {framework.stars && framework.stars > 0 && (
+              <div className="flex items-center gap-1">
+                <Star size={12} className="text-amber-400 fill-amber-400" />
+                <span>{formatStars(framework.stars)}</span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -81,57 +67,11 @@ export const FrameworkCard = memo(function FrameworkCard({ framework, onClick, f
         {framework.description}
       </p>
 
-      {/* Agent compatibility + component stats */}
-      {(() => {
-        const stats = [
-          framework.skills_count && `${framework.skills_count} ${framework.skills_count === 1 ? "skill" : "skills"}`,
-          framework.subagents_count && `${framework.subagents_count} ${framework.subagents_count === 1 ? "agent" : "agents"}`,
-          framework.mcps_count && `${framework.mcps_count} ${framework.mcps_count === 1 ? "MCP" : "MCPs"}`,
-        ].filter(Boolean);
-
-        if (featured) {
-          return (
-            <AgentCompatibilityRow
-              item={framework}
-              size="sm"
-              className="mb-4"
-            />
-          );
-        }
-
-        return (
-          <div className="flex items-center gap-3 text-xs text-muted-foreground mb-5 flex-wrap">
-            <AgentCompatibilityRow item={framework} size="sm" />
-            {stats.length > 0 && (
-              <>
-                <span className="text-border">|</span>
-                <span>{stats.join(" · ")}</span>
-              </>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* Install command */}
-      {framework.install_command && (
-        <div className="flex items-center gap-2" onClick={featured ? (e) => e.preventDefault() : undefined}>
-          <code className={`flex-1 px-3 py-2 rounded-lg font-mono text-xs text-lime-400 border truncate ${
-            featured ? "bg-black/50 border-zinc-800" : "bg-background border-border"
-          }`}>
-            {framework.install_command}
-          </code>
-          <Button
-            variant="secondary"
-            size="icon"
-            className="h-8 w-8 flex-shrink-0"
-            onClick={copyCommand}
-          >
-            {copied ? (
-              <Check size={14} className="text-emerald-400" />
-            ) : (
-              <Copy size={14} />
-            )}
-          </Button>
+      {/* Last commit */}
+      {framework.last_commit_at && (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Clock size={12} />
+          <span>{formatRelativeTime(framework.last_commit_at)}</span>
         </div>
       )}
 
@@ -153,18 +93,9 @@ export const FrameworkCard = memo(function FrameworkCard({ framework, onClick, f
     </div>
   ) : content;
 
-  // If onClick is provided, use a div with onClick; otherwise use Link
-  if (onClick) {
-    return (
-      <div className={className} onClick={onClick} style={{ cursor: "pointer" }}>
-        {wrappedContent}
-      </div>
-    );
-  }
-
   return (
-    <Link href={`/frameworks/${framework.slug}`} className={className}>
+    <div className={className} onClick={onClick} style={{ cursor: "pointer" }}>
       {wrappedContent}
-    </Link>
+    </div>
   );
 });

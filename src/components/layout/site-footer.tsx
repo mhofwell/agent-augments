@@ -8,13 +8,13 @@ const navigation = {
     { name: "Components", href: "/components" },
   ],
   resources: [
-    { name: "Submit Augment", href: "#", external: false },
+    { name: "Submit Augment", href: "#" },
   ],
 };
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-zinc-800/50 bg-black relative z-10">
+    <footer className="border-t border-zinc-800/50 bg-black relative">
       <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
           {/* Brand column */}
@@ -63,23 +63,12 @@ export function SiteFooter() {
             <ul className="space-y-3">
               {navigation.resources.map((item) => (
                 <li key={item.name}>
-                  {item.external ? (
-                    <a
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-zinc-500 hover:text-white transition-colors"
-                    >
-                      {item.name}
-                    </a>
-                  ) : (
-                    <Link
-                      href={item.href}
-                      className="text-sm text-zinc-500 hover:text-white transition-colors"
-                    >
-                      {item.name}
-                    </Link>
-                  )}
+                  <Link
+                    href={item.href}
+                    className="text-sm text-zinc-500 hover:text-white transition-colors"
+                  >
+                    {item.name}
+                  </Link>
                 </li>
               ))}
             </ul>

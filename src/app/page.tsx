@@ -5,22 +5,26 @@ import Link from "next/link";
 import { Search, Layers, Zap, Command, X, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SiteHeader, SiteFooter } from "@/components/layout";
-import { useFrameworks } from "@/hooks";
+import { useFrameworks, useFrameworkBookmarks } from "@/hooks";
 import { useSkillPublishers } from "@/hooks/useSkillPublishers";
 import { useComponentLibraries } from "@/hooks/useComponentLibraries";
 import { FrameworkCard } from "@/components/framework/framework-card";
+import { FrameworkModal } from "@/components/framework/framework-modal";
 import { ComponentCard } from "@/components/component-libraries/component-card";
 import { PublisherCard } from "@/components/skills/publisher-card";
 import { AgentCarousel } from "@/components/skills/agent-carousel";
+import type { Framework } from "@/types/database";
 
 export default function Home() {
   const [search, setSearch] = useState("");
   const [inputFocused, setInputFocused] = useState(false);
+  const [selectedFramework, setSelectedFramework] = useState<Framework | null>(null);
 
   // Data hooks
   const { frameworks, isLoading: frameworksLoading } = useFrameworks();
   const { publishers, isLoading: publishersLoading } = useSkillPublishers();
   const { libraries, isLoading: librariesLoading } = useComponentLibraries({ sort: "stars" });
+  const { bookmarkedIds, toggleBookmark } = useFrameworkBookmarks();
 
   const isLoading = frameworksLoading || publishersLoading || librariesLoading;
   const hasSearch = search.length > 0;
@@ -28,7 +32,7 @@ export default function Home() {
   // Filter frameworks by search
   const filteredFrameworks = frameworks.filter((fw) => {
     if (!search) return true;
-    const searchable = `${fw.name} ${fw.description || ""} ${fw.features?.join(" ") || ""}`.toLowerCase();
+    const searchable = `${fw.name} ${fw.description || ""}`.toLowerCase();
     return searchable.includes(search.toLowerCase());
   });
 
@@ -125,7 +129,11 @@ export default function Home() {
           <section className="pb-12">
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredFrameworks.slice(0, 12).map((fw) => (
-                <FrameworkCard key={fw.id} framework={fw} />
+                <FrameworkCard
+                  key={fw.id}
+                  framework={fw}
+                  onClick={() => setSelectedFramework(fw)}
+                />
               ))}
             </div>
             {filteredFrameworks.length === 0 && (
@@ -165,7 +173,11 @@ export default function Home() {
 
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {frameworks.slice(0, 3).map((fw) => (
-                  <FrameworkCard key={fw.id} framework={fw} />
+                  <FrameworkCard
+                    key={fw.id}
+                    framework={fw}
+                    onClick={() => setSelectedFramework(fw)}
+                  />
                 ))}
               </div>
             </section>
@@ -229,6 +241,17 @@ export default function Home() {
       </main>
 
       <SiteFooter />
+
+      {/* Framework Detail Modal */}
+      <FrameworkModal
+        framework={selectedFramework}
+        open={!!selectedFramework}
+        onOpenChange={(open) => !open && setSelectedFramework(null)}
+        isBookmarked={selectedFramework ? bookmarkedIds.has(selectedFramework.id) : false}
+        onToggleBookmark={
+          selectedFramework ? () => toggleBookmark(selectedFramework.id) : undefined
+        }
+      />
     </div>
   );
 }
