@@ -1,18 +1,37 @@
 "use client";
 
-import { memo } from "react";
-import { Star, BadgeCheck, Sparkles, Clock } from "lucide-react";
+import { memo, useState } from "react";
+import Link from "next/link";
+import { Copy, Check, Star, BadgeCheck, Sparkles, Clock } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { isVerified, extractAuthor, formatStars, formatRelativeTime } from "./framework-utils";
+import { AgentCompatibilityRow } from "./shared/AgentCompatibilityRow";
 import type { Framework } from "@/types/database";
 
 interface FrameworkCardProps {
   framework: Framework;
-  onClick: () => void;
   featured?: boolean;
 }
 
-export const FrameworkCard = memo(function FrameworkCard({ framework, onClick, featured = false }: FrameworkCardProps) {
+export const FrameworkCard = memo(function FrameworkCard({ framework, featured = false }: FrameworkCardProps) {
+  const [copied, setCopied] = useState(false);
   const author = extractAuthor(framework.github_url);
+
+  const copyCommand = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (framework.install_command) {
+      try {
+        await navigator.clipboard.writeText(framework.install_command);
+        setCopied(true);
+        toast.success("Copied to clipboard");
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        toast.error("Failed to copy to clipboard");
+      }
+    }
+  };
 
   const content = (
     <>
@@ -67,6 +86,32 @@ export const FrameworkCard = memo(function FrameworkCard({ framework, onClick, f
         {framework.description}
       </p>
 
+      {/* Agent compatibility */}
+      <AgentCompatibilityRow item={framework} size="sm" className="mb-4" />
+
+      {/* Install command */}
+      {framework.install_command && (
+        <div className="flex items-center gap-2 mb-3" onClick={(e) => e.stopPropagation()}>
+          <code className={`flex-1 px-3 py-2 rounded-lg font-mono text-xs text-lime-400 border truncate ${
+            featured ? "bg-black/50 border-zinc-800" : "bg-background border-border"
+          }`}>
+            {framework.install_command}
+          </code>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-8 w-8 flex-shrink-0"
+            onClick={copyCommand}
+          >
+            {copied ? (
+              <Check size={14} className="text-emerald-400" />
+            ) : (
+              <Copy size={14} />
+            )}
+          </Button>
+        </div>
+      )}
+
       {/* Last commit */}
       {framework.last_commit_at && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -94,8 +139,8 @@ export const FrameworkCard = memo(function FrameworkCard({ framework, onClick, f
   ) : content;
 
   return (
-    <div className={className} onClick={onClick} style={{ cursor: "pointer" }}>
+    <Link href={`/frameworks/${framework.slug}`} className={className}>
       {wrappedContent}
-    </div>
+    </Link>
   );
 });

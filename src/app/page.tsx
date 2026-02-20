@@ -5,26 +5,22 @@ import Link from "next/link";
 import { Search, Layers, Zap, Command, X, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SiteHeader, SiteFooter } from "@/components/layout";
-import { useFrameworks, useFrameworkBookmarks } from "@/hooks";
+import { useFrameworks } from "@/hooks";
 import { useSkillPublishers } from "@/hooks/useSkillPublishers";
 import { useComponentLibraries } from "@/hooks/useComponentLibraries";
 import { FrameworkCard } from "@/components/framework/framework-card";
-import { FrameworkModal } from "@/components/framework/framework-modal";
 import { ComponentCard } from "@/components/component-libraries/component-card";
 import { PublisherCard } from "@/components/skills/publisher-card";
 import { AgentCarousel } from "@/components/skills/agent-carousel";
-import type { Framework } from "@/types/database";
 
 export default function Home() {
   const [search, setSearch] = useState("");
   const [inputFocused, setInputFocused] = useState(false);
-  const [selectedFramework, setSelectedFramework] = useState<Framework | null>(null);
 
   // Data hooks
   const { frameworks, isLoading: frameworksLoading } = useFrameworks();
   const { publishers, isLoading: publishersLoading } = useSkillPublishers();
   const { libraries, isLoading: librariesLoading } = useComponentLibraries({ sort: "stars" });
-  const { bookmarkedIds, toggleBookmark } = useFrameworkBookmarks();
 
   const isLoading = frameworksLoading || publishersLoading || librariesLoading;
   const hasSearch = search.length > 0;
@@ -132,8 +128,7 @@ export default function Home() {
                 <FrameworkCard
                   key={fw.id}
                   framework={fw}
-                  onClick={() => setSelectedFramework(fw)}
-                />
+                                  />
               ))}
             </div>
             {filteredFrameworks.length === 0 && (
@@ -176,8 +171,7 @@ export default function Home() {
                   <FrameworkCard
                     key={fw.id}
                     framework={fw}
-                    onClick={() => setSelectedFramework(fw)}
-                  />
+                                      />
                 ))}
               </div>
             </section>
@@ -242,16 +236,6 @@ export default function Home() {
 
       <SiteFooter />
 
-      {/* Framework Detail Modal */}
-      <FrameworkModal
-        framework={selectedFramework}
-        open={!!selectedFramework}
-        onOpenChange={(open) => !open && setSelectedFramework(null)}
-        isBookmarked={selectedFramework ? bookmarkedIds.has(selectedFramework.id) : false}
-        onToggleBookmark={
-          selectedFramework ? () => toggleBookmark(selectedFramework.id) : undefined
-        }
-      />
     </div>
   );
 }

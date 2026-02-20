@@ -16,6 +16,34 @@ export const toolColors: Record<string, ToolStyle> = {
   curl: { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/30" },
 };
 
+// Autonomy level display config
+export const autonomyConfig: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  LOW: { label: "You Drive", color: "text-lime-400", bg: "bg-lime-500/10", border: "border-lime-500/30" },
+  MED: { label: "Balanced", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30" },
+  HIGH: { label: "AI Drives", color: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/30" },
+};
+
+// Workflow step types (matches framework-sync.ts)
+export type WorkflowStep = {
+  id: string;
+  command: string;
+  humanDecision: string;
+  aiAction: string;
+  artifact?: string;
+};
+
+export type WorkflowSteps = {
+  philosophy: string;
+  steps: WorkflowStep[];
+};
+
+export function parseWorkflowSteps(raw: unknown): WorkflowSteps | null {
+  if (!raw || typeof raw !== "object") return null;
+  const obj = raw as Record<string, unknown>;
+  if (!obj.philosophy || !Array.isArray(obj.steps) || obj.steps.length === 0) return null;
+  return obj as unknown as WorkflowSteps;
+}
+
 export function getToolStyle(tool: string | null | undefined): ToolStyle {
   return toolColors[tool || ""] || toolColors.bash;
 }

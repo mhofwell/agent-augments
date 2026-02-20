@@ -5,15 +5,11 @@ import { Search, ArrowUpDown, ChevronDown, X } from "lucide-react";
 import { SiteHeader } from "@/components/layout";
 import { AgentCarousel } from "@/components/skills/agent-carousel";
 import { FrameworkCard } from "@/components/framework/framework-card";
-import { FrameworkModal } from "@/components/framework/framework-modal";
-import { useFrameworks, useFrameworkBookmarks } from "@/hooks";
-import type { Framework } from "@/types/database";
+import { useFrameworks } from "@/hooks";
 
 export function FrameworksHome() {
   const [search, setSearch] = useState("");
   const { frameworks, isLoading } = useFrameworks();
-  const { bookmarkedIds, toggleBookmark } = useFrameworkBookmarks();
-  const [selectedFramework, setSelectedFramework] = useState<Framework | null>(null);
 
   // Sort state
   type SortOption = "stars" | "name" | "updated";
@@ -81,7 +77,6 @@ export function FrameworksHome() {
             <FrameworkCard
               framework={featuredFramework}
               featured
-              onClick={() => setSelectedFramework(featuredFramework)}
             />
           ) : (
             <div className="rounded-xl border border-zinc-800 p-6 bg-zinc-900/50 animate-pulse">
@@ -171,7 +166,6 @@ export function FrameworksHome() {
                 <FrameworkCard
                   key={framework.id}
                   framework={framework}
-                  onClick={() => setSelectedFramework(framework)}
                 />
               ))}
             </div>
@@ -186,16 +180,6 @@ export function FrameworksHome() {
         </div>
       </footer>
 
-      {/* Framework Detail Modal */}
-      <FrameworkModal
-        framework={selectedFramework}
-        open={!!selectedFramework}
-        onOpenChange={(open) => !open && setSelectedFramework(null)}
-        isBookmarked={selectedFramework ? bookmarkedIds.has(selectedFramework.id) : false}
-        onToggleBookmark={
-          selectedFramework ? () => toggleBookmark(selectedFramework.id) : undefined
-        }
-      />
     </div>
   );
 }
